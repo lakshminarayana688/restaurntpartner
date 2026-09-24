@@ -1,82 +1,6 @@
-import { createClient, SupabaseClient } from '@supabase/supabase-js';
-
-// Read from localStorage (user configured in app) or Vite .env
-const getSavedConfig = () => {
-  const localUrl = localStorage.getItem('feedo_supabase_url');
-  const localKey = localStorage.getItem('feedo_supabase_key');
-
-  const url = localUrl || (import.meta as any).env?.VITE_SUPABASE_URL || '';
-  const key = localKey || (import.meta as any).env?.VITE_SUPABASE_ANON_KEY || '';
-
-  return { url, key, isConfigured: Boolean(url && key && !url.includes('YOUR_PROJECT_ID')) };
-};
-
-export const isSupabaseConfigured = (): boolean => {
-  return getSavedConfig().isConfigured;
-};
-
-let clientInstance: SupabaseClient | null = null;
-
-export const getSupabaseClient = (): SupabaseClient | null => {
-  const config = getSavedConfig();
-  if (!config.isConfigured) return null;
-
-  if (!clientInstance) {
-    clientInstance = createClient(config.url, config.key, {
-      realtime: {
-        params: {
-          eventsPerSecond: 10,
-        },
-      },
-    });
-  }
-  return clientInstance;
-};
-
-export const saveSupabaseCredentials = (url: string, key: string) => {
-  localStorage.setItem('feedo_supabase_url', url.trim());
-  localStorage.setItem('feedo_supabase_key', key.trim());
-  clientInstance = null; // reset instance
-};
-
-export const clearSupabaseCredentials = () => {
-  localStorage.removeItem('feedo_supabase_url');
-  localStorage.removeItem('feedo_supabase_key');
-  clientInstance = null;
-};
-
-/**
- * Invoke Supabase Edge Function with automatic JWT session injection
- */
-export async function invokeEdgeFunction<T = any>(
-  functionName: string,
-  payload: Record<string, any>,
-  restaurantId?: string
-): Promise<{ success: boolean; data?: T; error?: string }> {
-  const client = getSupabaseClient();
-  if (!client) {
-    return { success: false, error: 'Supabase client is not configured' };
-  }
-
-  try {
-    const { data, error } = await client.functions.invoke(functionName, {
-      body: payload,
-      headers: restaurantId ? { 'x-restaurant-id': restaurantId } : {},
-    });
-
-    if (error) {
-      return { success: false, error: error.message || 'Edge function call failed' };
-    }
-
-    return { success: true, data: data?.data ?? data };
-  } catch (err: any) {
-    return { success: false, error: err.message || 'Network error invoking Edge Function' };
-  }
-}
-
-export const SQL_SCHEMA_DDL = `-- ============================================================================
--- FEEDO RESTAURANT PARTNER — COMPLETE PRODUCTION ZERO-TRUST DATABASE SCHEMA
--- PostgreSQL 16 on Supabase with Multi-Tenant RLS & RBAC
+-- ============================================================================
+-- FEEDO RESTAURANT PARTNER — PRODUCTION DATABASE SCHEMA MIGRATION (01)
+-- Enterprise-grade PostgreSQL 16 schema with Multi-Tenant RBAC & Isolation
 -- ============================================================================
 
 -- 1. Enable Required Extensions
@@ -147,7 +71,7 @@ EXCEPTION
     WHEN duplicate_object THEN NULL;
 END $$;
 
--- 3. PROFILES
+-- 3. PROFILES (Linked 1-to-1 with Supabase Auth)
 CREATE TABLE IF NOT EXISTS public.profiles (
     id UUID PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
     full_name TEXT NOT NULL,
@@ -158,7 +82,7 @@ CREATE TABLE IF NOT EXISTS public.profiles (
     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
--- 4. RESTAURANTS
+-- 4. RESTAURANTS (Core Tenant entity)
 CREATE TABLE IF NOT EXISTS public.restaurants (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     owner_id UUID REFERENCES auth.users(id) ON DELETE SET NULL,
@@ -185,7 +109,7 @@ CREATE TABLE IF NOT EXISTS public.restaurants (
     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
--- 5. RESTAURANT_USERS
+-- 5. RESTAURANT_USERS (Multi-tenant Role-Based Membership)
 CREATE TABLE IF NOT EXISTS public.restaurant_users (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     restaurant_id UUID NOT NULL REFERENCES public.restaurants(id) ON DELETE CASCADE,
@@ -197,7 +121,7 @@ CREATE TABLE IF NOT EXISTS public.restaurant_users (
     UNIQUE(restaurant_id, user_id)
 );
 
--- 6. RESTAURANT_KYC
+-- 6. RESTAURANT_KYC (Sensitive verification documents & tax numbers)
 CREATE TABLE IF NOT EXISTS public.restaurant_kyc (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     restaurant_id UUID NOT NULL REFERENCES public.restaurants(id) ON DELETE CASCADE UNIQUE,
@@ -214,7 +138,7 @@ CREATE TABLE IF NOT EXISTS public.restaurant_kyc (
     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
--- 7. RESTAURANT_BANK_ACCOUNTS
+-- 7. RESTAURANT_BANK_ACCOUNTS (Bank & Payout Details with Column Encryption)
 CREATE TABLE IF NOT EXISTS public.restaurant_bank_accounts (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     restaurant_id UUID NOT NULL REFERENCES public.restaurants(id) ON DELETE CASCADE,
@@ -260,10 +184,38 @@ CREATE TABLE IF NOT EXISTS public.menu_items (
     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
--- 10. ORDERS
+-- 10. CUSTOMERS
+CREATE TABLE IF NOT EXISTS public.customers (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    name TEXT NOT NULL,
+    phone TEXT NOT NULL UNIQUE,
+    phone_masked TEXT NOT NULL,
+    email TEXT,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+-- 11. CUSTOMER_ADDRESSES
+CREATE TABLE IF NOT EXISTS public.customer_addresses (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    customer_id UUID NOT NULL REFERENCES public.customers(id) ON DELETE CASCADE,
+    label TEXT NOT NULL DEFAULT 'Home',
+    address_line TEXT NOT NULL,
+    area TEXT NOT NULL,
+    city TEXT NOT NULL DEFAULT 'Bengaluru',
+    state TEXT NOT NULL DEFAULT 'Karnataka',
+    pincode TEXT NOT NULL,
+    latitude NUMERIC(10, 7),
+    longitude NUMERIC(10, 7),
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+-- 12. ORDERS (Transactional Order Core with Strict State Machine)
 CREATE TABLE IF NOT EXISTS public.orders (
-    id TEXT PRIMARY KEY,
+    id TEXT PRIMARY KEY, -- e.g. 'FD10245'
     restaurant_id UUID NOT NULL REFERENCES public.restaurants(id) ON DELETE RESTRICT,
+    customer_id UUID REFERENCES public.customers(id) ON DELETE SET NULL,
     customer_name_snapshot TEXT NOT NULL,
     customer_phone_masked TEXT NOT NULL,
     customer_address_snapshot TEXT NOT NULL,
@@ -292,7 +244,7 @@ CREATE TABLE IF NOT EXISTS public.orders (
     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
--- 11. ORDER_ITEMS
+-- 13. ORDER_ITEMS (Immutable historical snapshot)
 CREATE TABLE IF NOT EXISTS public.order_items (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     order_id TEXT NOT NULL REFERENCES public.orders(id) ON DELETE CASCADE,
@@ -306,7 +258,7 @@ CREATE TABLE IF NOT EXISTS public.order_items (
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
--- 12. PAYOUTS
+-- 14. PAYOUTS (Immutable financial settlements)
 CREATE TABLE IF NOT EXISTS public.payouts (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     restaurant_id UUID NOT NULL REFERENCES public.restaurants(id) ON DELETE RESTRICT,
@@ -323,7 +275,7 @@ CREATE TABLE IF NOT EXISTS public.payouts (
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
--- 13. AUDIT_LOGS
+-- 15. AUDIT_LOGS (Tamper-evident system activity log)
 CREATE TABLE IF NOT EXISTS public.audit_logs (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     user_id UUID REFERENCES auth.users(id) ON DELETE SET NULL,
@@ -337,64 +289,58 @@ CREATE TABLE IF NOT EXISTS public.audit_logs (
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
--- 14. SECURITY DEFINER HELPER FUNCTIONS
-CREATE OR REPLACE FUNCTION public.is_restaurant_member(lookup_restaurant_id UUID)
-RETURNS BOOLEAN LANGUAGE sql SECURITY DEFINER SET search_path = public, pg_temp STABLE AS $$
-    SELECT EXISTS (
-        SELECT 1 FROM public.restaurant_users
-        WHERE restaurant_id = lookup_restaurant_id AND user_id = auth.uid() AND status = 'active'
-    );
-$$;
+-- 16. PERFORMANCE INDEXES
+CREATE INDEX IF NOT EXISTS idx_restaurants_owner_id ON public.restaurants(owner_id);
+CREATE INDEX IF NOT EXISTS idx_restaurants_status ON public.restaurants(status, verification_status);
+CREATE INDEX IF NOT EXISTS idx_restaurant_users_user ON public.restaurant_users(user_id);
+CREATE INDEX IF NOT EXISTS idx_restaurant_users_restaurant ON public.restaurant_users(restaurant_id);
+CREATE INDEX IF NOT EXISTS idx_menu_items_restaurant ON public.menu_items(restaurant_id);
+CREATE INDEX IF NOT EXISTS idx_menu_items_category ON public.menu_items(category_id);
+CREATE INDEX IF NOT EXISTS idx_orders_restaurant ON public.orders(restaurant_id, created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_orders_status ON public.orders(status);
+CREATE INDEX IF NOT EXISTS idx_orders_payment_status ON public.orders(payment_status);
+CREATE INDEX IF NOT EXISTS idx_order_items_order ON public.order_items(order_id);
+CREATE INDEX IF NOT EXISTS idx_payouts_restaurant ON public.payouts(restaurant_id, status);
+CREATE INDEX IF NOT EXISTS idx_audit_logs_restaurant ON public.audit_logs(restaurant_id, created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_audit_logs_action ON public.audit_logs(action);
 
-CREATE OR REPLACE FUNCTION public.is_restaurant_owner(lookup_restaurant_id UUID)
-RETURNS BOOLEAN LANGUAGE sql SECURITY DEFINER SET search_path = public, pg_temp STABLE AS $$
-    SELECT EXISTS (
-        SELECT 1 FROM public.restaurant_users
-        WHERE restaurant_id = lookup_restaurant_id AND user_id = auth.uid() AND role = 'OWNER' AND status = 'active'
-    );
-$$;
+-- 17. AUTOMATIC TIMESTAMP UPDATERS
+CREATE OR REPLACE FUNCTION public.handle_updated_at()
+RETURNS TRIGGER AS $$
+BEGIN
+    NEW.updated_at = NOW();
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
 
--- 15. ENABLE RLS ON ALL TABLES
-ALTER TABLE public.profiles ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.restaurants ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.restaurant_users ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.restaurant_kyc ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.restaurant_bank_accounts ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.menu_categories ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.menu_items ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.orders ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.order_items ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.payouts ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.audit_logs ENABLE ROW LEVEL SECURITY;
+CREATE OR REPLACE TRIGGER update_profiles_modtime
+    BEFORE UPDATE ON public.profiles
+    FOR EACH ROW EXECUTE FUNCTION public.handle_updated_at();
 
--- 16. RLS POLICIES
-CREATE POLICY "Users can read own profile" ON public.profiles FOR SELECT USING (id = auth.uid());
-CREATE POLICY "Members can view their restaurants" ON public.restaurants FOR SELECT USING (public.is_restaurant_member(id) OR owner_id = auth.uid());
-CREATE POLICY "Only Owners can view KYC" ON public.restaurant_kyc FOR SELECT USING (public.is_restaurant_owner(restaurant_id));
-CREATE POLICY "Only Owners can view bank" ON public.restaurant_bank_accounts FOR SELECT USING (public.is_restaurant_owner(restaurant_id));
-CREATE POLICY "Members can view orders" ON public.orders FOR SELECT USING (public.is_restaurant_member(restaurant_id));
-CREATE POLICY "Only Owners can view payouts" ON public.payouts FOR SELECT USING (public.is_restaurant_owner(restaurant_id));
+CREATE OR REPLACE TRIGGER update_restaurants_modtime
+    BEFORE UPDATE ON public.restaurants
+    FOR EACH ROW EXECUTE FUNCTION public.handle_updated_at();
 
--- 17. ENABLE REALTIME
-ALTER PUBLICATION supabase_realtime ADD TABLE public.orders;
-ALTER PUBLICATION supabase_realtime ADD TABLE public.restaurants;
+CREATE OR REPLACE TRIGGER update_restaurant_users_modtime
+    BEFORE UPDATE ON public.restaurant_users
+    FOR EACH ROW EXECUTE FUNCTION public.handle_updated_at();
 
--- 18. INSERT SEED DEFAULT RESTAURANT
-INSERT INTO public.restaurants (
-    id, name, legal_name, phone, email, restaurant_type, cuisines, address, city, pincode, status, verification_status, is_online
-) VALUES (
-    'a0000000-0000-0000-0000-000000000001',
-    'Lucky Family Restaurant',
-    'Lucky Family Foods Pvt Ltd',
-    '+91 98765 43210',
-    'lucky.family.blr@feedopartner.com',
-    'Restaurant',
-    ARRAY['Biryani', 'South Indian', 'North Indian', 'Chinese'],
-    'No. 42, 80 Feet Road, 4th Block, Koramangala, Bengaluru',
-    'Bengaluru',
-    '560034',
-    'active',
-    'approved',
-    true
-) ON CONFLICT (id) DO NOTHING;
-`;
+CREATE OR REPLACE TRIGGER update_restaurant_kyc_modtime
+    BEFORE UPDATE ON public.restaurant_kyc
+    FOR EACH ROW EXECUTE FUNCTION public.handle_updated_at();
+
+CREATE OR REPLACE TRIGGER update_restaurant_bank_accounts_modtime
+    BEFORE UPDATE ON public.restaurant_bank_accounts
+    FOR EACH ROW EXECUTE FUNCTION public.handle_updated_at();
+
+CREATE OR REPLACE TRIGGER update_menu_categories_modtime
+    BEFORE UPDATE ON public.menu_categories
+    FOR EACH ROW EXECUTE FUNCTION public.handle_updated_at();
+
+CREATE OR REPLACE TRIGGER update_menu_items_modtime
+    BEFORE UPDATE ON public.menu_items
+    FOR EACH ROW EXECUTE FUNCTION public.handle_updated_at();
+
+CREATE OR REPLACE TRIGGER update_orders_modtime
+    BEFORE UPDATE ON public.orders
+    FOR EACH ROW EXECUTE FUNCTION public.handle_updated_at();
