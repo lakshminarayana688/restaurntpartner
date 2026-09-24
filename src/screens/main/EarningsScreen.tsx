@@ -136,16 +136,20 @@ export const EarningsScreen: React.FC = () => {
 
             <div className="bg-slate-50 p-4 rounded-2xl border border-slate-200 space-y-2 text-xs">
               <div>
-                <span className="text-slate-400 block text-[10px] uppercase">Bank Name</span>
+                <span className="text-slate-400 block text-[10px] uppercase font-bold">Bank Name</span>
                 <span className="font-bold text-slate-800">{restaurant.bankName}</span>
               </div>
               <div>
-                <span className="text-slate-400 block text-[10px] uppercase">Account Number</span>
-                <span className="font-mono font-bold text-slate-900">{restaurant.bankAccount}</span>
+                <span className="text-slate-400 block text-[10px] uppercase font-bold">Account (Masked)</span>
+                <span className="font-mono font-bold text-slate-900">
+                  •••• •••• •••• {restaurant.bankAccount.slice(-4) || '9921'}
+                </span>
               </div>
               <div>
-                <span className="text-slate-400 block text-[10px] uppercase">IFSC Code</span>
-                <span className="font-mono font-bold text-slate-700">{restaurant.ifscCode}</span>
+                <span className="text-slate-400 block text-[10px] uppercase font-bold">IFSC Code</span>
+                <span className="font-mono font-bold text-slate-700">
+                  {restaurant.ifscCode.slice(0, 4)}•••••••
+                </span>
               </div>
             </div>
           </div>

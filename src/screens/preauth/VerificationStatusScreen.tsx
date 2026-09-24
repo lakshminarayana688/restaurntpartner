@@ -11,7 +11,7 @@ import {
 } from 'lucide-react';
 
 export const VerificationStatusScreen: React.FC = () => {
-  const { restaurant, simulateApproval, setScreen } = useApp();
+  const { restaurant, simulateApproval, setScreen, isPrototypeMode, showToast } = useApp();
 
   return (
     <div className="min-h-screen bg-slate-50 py-10 px-4 sm:px-6 flex flex-col justify-center items-center">
@@ -89,23 +89,38 @@ export const VerificationStatusScreen: React.FC = () => {
             View Submitted Documents
           </button>
 
-          {/* Prototype Demo Fast-Forward Button */}
-          <div className="p-4 bg-gradient-to-r from-emerald-50 to-teal-50 border border-emerald-200 rounded-2xl text-left space-y-2">
-            <div className="flex items-center gap-2 text-xs font-bold text-emerald-900">
-              <Sparkles className="w-4 h-4 text-emerald-600" />
-              <span>Prototype Admin Demo Shortcut:</span>
+          {isPrototypeMode ? (
+            /* Prototype Demo Fast-Forward Button */
+            <div className="p-4 bg-gradient-to-r from-emerald-50 to-teal-50 border border-emerald-200 rounded-2xl text-left space-y-2">
+              <div className="flex items-center gap-2 text-xs font-bold text-emerald-900">
+                <Sparkles className="w-4 h-4 text-emerald-600" />
+                <span>Prototype Admin Demo Shortcut:</span>
+              </div>
+              <p className="text-[11px] text-emerald-700">
+                In real production, this takes 24 hours. For this prototype review, click below to instantly simulate FEEDO approval!
+              </p>
+              <button
+                onClick={simulateApproval}
+                className="w-full py-3 px-4 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-xl shadow-md shadow-emerald-600/20 flex items-center justify-center gap-2 transition-all cursor-pointer"
+              >
+                <CheckCircle2 className="w-4 h-4" />
+                <span>[ Simulate Approval ] → Approve Restaurant Now</span>
+              </button>
             </div>
-            <p className="text-[11px] text-emerald-700">
-              In real production, this takes 24 hours. For this prototype review, click below to instantly simulate FEEDO approval!
-            </p>
-            <button
-              onClick={simulateApproval}
-              className="w-full py-3 px-4 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-xl shadow-md shadow-emerald-600/20 flex items-center justify-center gap-2 transition-all cursor-pointer"
-            >
-              <CheckCircle2 className="w-4 h-4" />
-              <span>[ Simulate Approval ] → Approve Restaurant Now</span>
-            </button>
-          </div>
+          ) : (
+            <div className="p-4 bg-slate-50 border border-slate-200 rounded-2xl text-xs text-slate-600 text-left space-y-1">
+              <span className="font-bold text-slate-800 block">Verification in Progress</span>
+              <p className="text-[11px] text-slate-500">
+                Our merchant compliance team is reviewing your documents. You will receive an SMS confirmation once approved.
+              </p>
+              <button
+                onClick={() => showToast('Status refreshed: Documents currently under review by FEEDO Ops', 'info')}
+                className="text-[11px] font-bold text-feedo-600 hover:underline pt-1 block cursor-pointer"
+              >
+                ↻ Refresh Status
+              </button>
+            </div>
+          )}
         </div>
       </div>
     </div>

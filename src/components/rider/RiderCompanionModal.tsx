@@ -26,11 +26,12 @@ export const RiderCompanionModal: React.FC = () => {
     startOutForDelivery,
     markDelivered,
     showToast,
+    isPrototypeMode,
   } = useApp();
 
   const [enteredOtp, setEnteredOtp] = useState('');
 
-  if (!isRiderSimulatorOpen) return null;
+  if (!isPrototypeMode || !isRiderSimulatorOpen) return null;
 
   // Find the active order for the rider
   const activeOrder = orders.find((o) =>

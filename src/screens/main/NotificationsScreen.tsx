@@ -18,7 +18,7 @@ import {
 type NotifTab = 'ALL' | 'ORDERS' | 'MESSAGES' | 'MARKETING' | 'SYSTEM';
 
 export const NotificationsScreen: React.FC = () => {
-  const { showToast, setSelectedOrder, orders, simulateNewIncomingOrder } = useApp();
+  const { showToast, setSelectedOrder, orders, setScreen, isPrototypeMode } = useApp();
   const [activeTab, setActiveTab] = useState<NotifTab>('ALL');
   const [searchQuery, setSearchQuery] = useState('');
 
@@ -54,7 +54,7 @@ export const NotificationsScreen: React.FC = () => {
       badgeBg: 'bg-emerald-50 text-emerald-700',
       title: 'Bank Account Verified for Settlements',
       time: '2 hours ago',
-      description: 'HDFC Bank ending in ****9921 successfully verified. Daily NEFT deposits active.',
+      description: 'HDFC Bank ending in •••• 9921 successfully verified. Daily NEFT deposits active.',
     },
     {
       id: 'notif-mkt-1',
@@ -72,7 +72,7 @@ export const NotificationsScreen: React.FC = () => {
       badgeBg: 'bg-slate-100 text-slate-700',
       title: 'Daily Business Summary Ready',
       time: 'Yesterday',
-      description: 'Yesterday revenue of ₹18,450 successfully audited and closed with 100% handover score.',
+      description: 'Yesterday revenue audited and closed with 100% handover score.',
     },
   ];
 
@@ -91,7 +91,7 @@ export const NotificationsScreen: React.FC = () => {
         <div>
           <div className="flex items-center gap-2 mb-1">
             <span className="text-xs font-bold bg-feedo-50 text-feedo-700 px-2.5 py-0.5 rounded-full border border-feedo-200">
-              24 Unread Notifications
+              {filteredNotifs.length > 0 ? `${filteredNotifs.length} Unread Notifications` : '0 unread notifications'}
             </span>
           </div>
           <h1 className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight">
@@ -177,16 +177,22 @@ export const NotificationsScreen: React.FC = () => {
                 {n.hasActions && (
                   <div className="pt-2 border-t border-slate-100 flex items-center gap-2">
                     <button
-                      onClick={simulateNewIncomingOrder}
+                      onClick={() => {
+                        if (orders.length > 0) {
+                          setSelectedOrder(orders[0]);
+                        } else {
+                          setScreen('orders');
+                        }
+                      }}
                       className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-xl shadow-xs transition-colors cursor-pointer"
                     >
-                      Accept Now
+                      View Order
                     </button>
                     <button
-                      onClick={() => setSelectedOrder(orders[0])}
+                      onClick={() => setScreen('orders')}
                       className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold rounded-xl transition-colors cursor-pointer"
                     >
-                      View Details
+                      Orders Hub
                     </button>
                   </div>
                 )}

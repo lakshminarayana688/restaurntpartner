@@ -231,7 +231,7 @@ export const SupportScreen: React.FC = () => {
                 Hello Lucky Family Restaurant! I'm Sandeep from FEEDO Partner Support. How can I help with your orders or kitchen operations right now?
               </div>
               <div className="p-3 bg-feedo-500 text-white rounded-2xl max-w-[85%] ml-auto text-xs">
-                Hi Sandeep, all kitchen operations are running smoothly. Testing the prototype dispatch flow!
+                Hi Sandeep, all kitchen operations are running smoothly today.
               </div>
             </div>
 

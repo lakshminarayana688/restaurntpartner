@@ -35,6 +35,8 @@ export const OrderDetailModal: React.FC = () => {
     startOutForDelivery,
     markDelivered,
     restaurant,
+    isPrototypeMode,
+    currentUserRole,
   } = useApp();
 
   const [verifyMode, setVerifyMode] = useState<'OTP' | 'QR'>('OTP');
@@ -145,7 +147,7 @@ export const OrderDetailModal: React.FC = () => {
               <p className="text-xs text-emerald-800">
                 Package is on shelf. Delivery partner {selectedOrder.rider?.name || 'Arun Kumar'} will verify OTP upon arrival.
               </p>
-              {!selectedOrder.riderArrivedAt && (
+              {!selectedOrder.riderArrivedAt && isPrototypeMode && (
                 <button
                   onClick={() => markRiderArrived(selectedOrder.id)}
                   className="text-xs font-bold text-indigo-700 bg-indigo-50 border border-indigo-200 hover:bg-indigo-100 px-3 py-2 rounded-xl w-full flex items-center justify-center gap-2 transition-colors cursor-pointer"
@@ -271,7 +273,7 @@ export const OrderDetailModal: React.FC = () => {
                 <h4 className="text-xs font-bold text-slate-600 uppercase tracking-wider">
                   Live Dispatch Tracking
                 </h4>
-                {isPickedUp && (
+                {isPickedUp && isPrototypeMode && (
                   <button
                     onClick={() => markDelivered(selectedOrder.id)}
                     className="text-xs font-bold text-emerald-700 bg-emerald-50 hover:bg-emerald-100 px-3 py-1 rounded-lg border border-emerald-200 transition-colors cursor-pointer"
@@ -328,15 +330,23 @@ export const OrderDetailModal: React.FC = () => {
             </div>
           </div>
 
-          {/* 3. CUSTOMER & DELIVERY INFO */}
+          {/* 3. CUSTOMER & DELIVERY INFO (Role-Protected PII) */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="p-4 bg-slate-50 rounded-2xl border border-slate-200 text-xs space-y-2">
               <h4 className="font-bold text-slate-800 flex items-center gap-1.5">
                 <Store className="w-3.5 h-3.5 text-feedo-600" /> Customer Information
               </h4>
-              <p className="font-bold text-slate-900">{selectedOrder.customer.name}</p>
-              <p className="text-slate-500 font-mono">{selectedOrder.customer.phoneMasked}</p>
-              <p className="text-slate-600 leading-tight">{selectedOrder.customer.address}</p>
+              <p className="font-bold text-slate-900">
+                {selectedOrder.customer.name.split(' ')[0]} {selectedOrder.customer.name.split(' ')[1]?.[0] || ''}.
+              </p>
+              {currentUserRole !== 'KITCHEN' ? (
+                <>
+                  <p className="text-slate-500 font-mono">{selectedOrder.customer.phoneMasked || '+91 98******10'}</p>
+                  <p className="text-slate-600 leading-tight">Delivery Area: {selectedOrder.customer.area || 'Bellandur'}</p>
+                </>
+              ) : (
+                <p className="text-slate-500 italic">Delivery Area: {selectedOrder.customer.area || 'Bellandur'}</p>
+              )}
             </div>
 
             <div className="p-4 bg-slate-50 rounded-2xl border border-slate-200 text-xs space-y-2">
