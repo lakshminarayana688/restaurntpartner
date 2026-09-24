@@ -30,6 +30,7 @@ export const OrdersScreen: React.FC = () => {
     verifyPickup,
     confirmHandover,
     startOutForDelivery,
+    isPrototypeMode,
   } = useApp();
 
   const [activeTab, setActiveTab] = useState<TabType>('ALL');
@@ -113,13 +114,15 @@ export const OrdersScreen: React.FC = () => {
           </p>
         </div>
 
-        <button
-          onClick={simulateNewIncomingOrder}
-          className="py-2.5 px-4 bg-gradient-to-r from-amber-500 to-feedo-500 hover:from-amber-600 hover:to-feedo-600 text-white font-bold text-xs uppercase tracking-wider rounded-xl shadow-md shadow-feedo-500/20 flex items-center gap-2 self-start sm:self-auto cursor-pointer transition-all"
-        >
-          <Zap className="w-4 h-4 fill-current" />
-          <span>+ Simulate Order</span>
-        </button>
+        {isPrototypeMode && (
+          <button
+            onClick={simulateNewIncomingOrder}
+            className="py-2.5 px-4 bg-gradient-to-r from-amber-500 to-feedo-500 hover:from-amber-600 hover:to-feedo-600 text-white font-bold text-xs uppercase tracking-wider rounded-xl shadow-md shadow-feedo-500/20 flex items-center gap-2 self-start sm:self-auto cursor-pointer transition-all"
+          >
+            <Zap className="w-4 h-4 fill-current" />
+            <span>+ Simulate Order</span>
+          </button>
+        )}
       </div>
 
       {/* Tabs & Search Bar */}
@@ -175,12 +178,14 @@ export const OrdersScreen: React.FC = () => {
               ? `No matching orders found for "${searchQuery}".`
               : 'There are no active orders under this category right now.'}
           </p>
-          <button
-            onClick={simulateNewIncomingOrder}
-            className="mt-4 px-4 py-2 bg-feedo-50 text-feedo-700 border border-feedo-200 text-xs font-bold rounded-xl hover:bg-feedo-100 transition-colors"
-          >
-            + Simulate New Customer Order
-          </button>
+          {isPrototypeMode && (
+            <button
+              onClick={simulateNewIncomingOrder}
+              className="mt-4 px-4 py-2 bg-feedo-50 text-feedo-700 border border-feedo-200 text-xs font-bold rounded-xl hover:bg-feedo-100 transition-colors"
+            >
+              + Simulate New Customer Order
+            </button>
+          )}
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">

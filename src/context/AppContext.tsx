@@ -37,6 +37,8 @@ export type ScreenName =
   | 'support'
   | 'settings';
 
+export type UserRole = 'OWNER' | 'MANAGER' | 'STAFF' | 'KITCHEN' | 'CASHIER';
+
 export interface AppNotification {
   id: string;
   title: string;
@@ -55,6 +57,9 @@ export interface ToastMessage {
 interface AppContextType {
   currentScreen: ScreenName;
   setScreen: (screen: ScreenName) => void;
+  currentUserRole: UserRole;
+  setCurrentUserRole: (role: UserRole) => void;
+  isPrototypeMode: boolean;
   restaurant: RestaurantDetails;
   updateRestaurant: (details: Partial<RestaurantDetails>) => void;
   documents: VerificationDocument[];
@@ -127,6 +132,9 @@ interface AppContextType {
 const AppContext = createContext<AppContextType | undefined>(undefined);
 
 export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const isPrototypeMode = (import.meta as any).env?.VITE_PROTOTYPE_MODE === 'true';
+  const [currentUserRole, setCurrentUserRole] = useState<UserRole>('OWNER');
+  
   // Screen state
   const [currentScreen, setCurrentScreen] = useState<ScreenName>('dashboard');
   
@@ -321,11 +329,21 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
 
   const toggleOnlineStatus = () => {
+    if (!['OWNER', 'MANAGER'].includes(currentUserRole)) {
+      showToast('Permission denied: Only Owner or Manager can change kitchen online status', 'error');
+      return;
+    }
+
+    if (restaurant.regStatus === 'UNDER_REVIEW') {
+      showToast('Cannot switch ONLINE: Restaurant KYC is under verification review by FEEDO compliance team', 'warning');
+      return;
+    }
+
     if (restaurant.isOnline) {
       setIsOfflineModalOpen(true);
     } else {
       setRestaurant(prev => ({ ...prev, isOnline: true }));
-      showToast('You are now ONLINE and accepting orders', 'success');
+      showToast('Kitchen is now ONLINE and actively accepting orders', 'success');
       if (restaurant.newOrderSound) soundEffects.playAcceptTone();
     }
   };
@@ -783,6 +801,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       value={{
         currentScreen,
         setScreen: setCurrentScreen,
+        currentUserRole,
+        setCurrentUserRole,
+        isPrototypeMode,
         restaurant,
         updateRestaurant,
         documents,

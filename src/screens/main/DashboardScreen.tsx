@@ -9,13 +9,12 @@ import {
   CheckCircle2,
   XCircle,
   Clock,
-  ArrowRight,
-  Zap,
-  Bike,
   Plus,
   ChevronRight,
   Star,
   Eye,
+  ArrowUpRight,
+  Store,
 } from 'lucide-react';
 
 export const DashboardScreen: React.FC = () => {
@@ -24,148 +23,220 @@ export const DashboardScreen: React.FC = () => {
     orders,
     menuItems,
     setSelectedOrder,
-    simulateNewIncomingOrder,
     setScreen,
+    currentUserRole,
   } = useApp();
 
   const [chartPeriod, setChartPeriod] = useState<'today' | 'week' | 'month'>('today');
 
-  // Compute live metrics
-  const todayOrders = orders.length + 19; // baseline 24
-  const todayRevenue = orders.reduce((sum, o) => sum + (o.status !== 'RESTAURANT_REJECTED' ? o.total : 0), 10560);
-  const preparingCount = orders.filter((o) => ['RESTAURANT_ACCEPTED', 'PREPARING', 'READY_FOR_PICKUP'].includes(o.status)).length;
-  const completedCount = orders.filter((o) => ['DELIVERED', 'PICKED_UP'].includes(o.status)).length + 17;
-  const cancelledCount = orders.filter((o) => ['RESTAURANT_REJECTED', 'CUSTOMER_CANCELLED'].includes(o.status)).length + 1;
+  // Real calculations directly from live orders data (No fake additions or baselines)
+  const todayOrdersCount = orders.length;
+  const todayRevenue = orders
+    .filter((o) => o.status !== 'RESTAURANT_REJECTED' && o.status !== 'CUSTOMER_CANCELLED')
+    .reduce((sum, o) => sum + (Number(o.total) || 0), 0);
+  
+  const inKitchenCount = orders.filter((o) =>
+    ['RESTAURANT_ACCEPTED', 'PREPARING', 'READY_FOR_PICKUP'].includes(o.status)
+  ).length;
 
-  // Active kitchen orders
-  const activeOrders = orders.filter((o) =>
-    ['PAYMENT_CONFIRMED', 'RESTAURANT_ACCEPTED', 'PREPARING', 'READY_FOR_PICKUP', 'RIDER_ASSIGNED', 'RIDER_ARRIVED'].includes(
-      o.status
-    )
+  const completedOrders = orders.filter((o) => ['DELIVERED', 'PICKED_UP'].includes(o.status));
+  const completedCount = completedOrders.length;
+
+  const cancelledOrders = orders.filter((o) =>
+    ['RESTAURANT_REJECTED', 'CUSTOMER_CANCELLED'].includes(o.status)
+  );
+  const cancelledCount = cancelledOrders.length;
+
+  // Real completion rate calculation
+  const completionRate =
+    todayOrdersCount > 0
+      ? Math.round((completedCount / todayOrdersCount) * 100)
+      : 100;
+
+  // Real average order value
+  const avgOrderValue =
+    todayOrdersCount > 0 ? Math.round(todayRevenue / todayOrdersCount) : 0;
+
+  // Active kitchen pipeline orders
+  const activeKitchenOrders = orders.filter((o) =>
+    [
+      'PLACED',
+      'PAYMENT_CONFIRMED',
+      'RESTAURANT_ACCEPTED',
+      'PREPARING',
+      'READY_FOR_PICKUP',
+      'RIDER_ASSIGNED',
+      'RIDER_ARRIVED',
+    ].includes(o.status)
   );
 
-  const topItems = menuItems.filter(i => i.isBestSeller).slice(0, 5);
+  const topItems = menuItems.filter((i) => i.isBestSeller).slice(0, 5);
 
   return (
-    <div className="p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto space-y-6">
-      {/* 1. WELCOME BANNER */}
+    <div className="p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto space-y-6 animate-in fade-in">
+      {/* 1. WELCOME HEADER BANNER */}
       <div className="bg-gradient-to-r from-slate-900 via-slate-800 to-feedo-950 rounded-3xl p-6 text-white shadow-xl flex flex-col md:flex-row items-start md:items-center justify-between gap-4 border border-slate-800">
         <div>
-          <div className="flex items-center gap-2 mb-1">
+          <div className="flex items-center gap-2 mb-1.5">
             <span className="text-xs font-bold uppercase tracking-wider text-feedo-400 bg-feedo-500/10 px-2.5 py-0.5 rounded-full border border-feedo-500/20">
-              Live Operations Hub
+              Kitchen Operations Hub
             </span>
-            <span className="text-xs text-slate-400">Koramangala 4th Block</span>
+            <span className="text-xs text-slate-400">
+              {restaurant.city} • {restaurant.address.split(',')[0]}
+            </span>
           </div>
           <h1 className="text-2xl sm:text-3xl font-black tracking-tight">
             Good Morning, {restaurant.restaurantName} 👋
           </h1>
-          <p className="text-xs sm:text-sm text-slate-300 mt-1">
-            {restaurant.isOnline
-              ? '🟢 Kitchen is ONLINE and actively receiving customer orders.'
-              : '🔴 Store is OFFLINE. Turn online to accept new orders.'}
+          <p className="text-xs sm:text-sm text-slate-300 mt-1 flex items-center gap-2">
+            <span
+              className={`w-2.5 h-2.5 rounded-full ${
+                restaurant.isOnline ? 'bg-emerald-400 live-pulse' : 'bg-rose-400'
+              }`}
+            />
+            <span>
+              {restaurant.isOnline
+                ? 'Kitchen is ONLINE and actively receiving customer orders.'
+                : 'Kitchen is OFFLINE. Switch status in header to start accepting orders.'}
+            </span>
           </p>
         </div>
 
-        <div className="flex items-center gap-3">
+        {/* Quick Operational CTAs */}
+        <div className="flex items-center gap-2.5 flex-wrap">
           <button
-            onClick={simulateNewIncomingOrder}
-            className="py-3 px-5 bg-gradient-to-r from-amber-500 to-feedo-500 hover:from-amber-600 hover:to-feedo-600 text-white font-black text-xs uppercase tracking-wider rounded-2xl shadow-lg shadow-feedo-500/25 flex items-center gap-2 transition-all cursor-pointer"
+            onClick={() => setScreen('orders')}
+            className="py-2.5 px-4 bg-feedo-500 hover:bg-feedo-600 text-white font-bold text-xs rounded-xl shadow-md shadow-feedo-500/25 flex items-center gap-2 transition-all cursor-pointer"
           >
-            <Zap className="w-4 h-4 fill-current" />
-            <span>+ SIMULATE NEW ORDER</span>
+            <Utensils className="w-4 h-4" />
+            <span>Live Orders Hub ({activeKitchenOrders.length})</span>
+          </button>
+          <button
+            onClick={() => setScreen('menu')}
+            className="py-2.5 px-3.5 bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold text-xs rounded-xl border border-slate-700 flex items-center gap-1.5 transition-colors cursor-pointer"
+          >
+            <Plus className="w-4 h-4" />
+            <span>Add Menu Item</span>
           </button>
         </div>
       </div>
 
-      {/* 2. TOP METRICS CARDS */}
+      {/* 2. REAL METRIC KPI CARDS (Calculated from real order records) */}
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 sm:gap-4">
         {/* Metric 1: Today's Orders */}
         <div className="bg-white rounded-2xl p-4 border border-slate-200 shadow-2xs">
           <div className="flex items-center justify-between text-slate-400 mb-2">
-            <span className="text-xs font-bold text-slate-600 uppercase tracking-wider">Today's Orders</span>
+            <span className="text-xs font-bold text-slate-600 uppercase tracking-wider">
+              Today's Orders
+            </span>
             <div className="p-2 bg-feedo-50 text-feedo-600 rounded-xl">
               <ShoppingBag className="w-4 h-4" />
             </div>
           </div>
-          <p className="text-2xl font-black text-slate-900">{todayOrders}</p>
-          <span className="text-[10px] font-bold text-emerald-600 flex items-center gap-0.5 mt-1">
-            <TrendingUp className="w-3 h-3" /> +14% vs yesterday
+          <p className="text-2xl font-black text-slate-900">{todayOrdersCount}</p>
+          <span className="text-[10px] text-slate-500 flex items-center gap-1 mt-1">
+            Avg Order: <strong>₹{avgOrderValue}</strong>
           </span>
         </div>
 
         {/* Metric 2: Today's Revenue */}
         <div className="bg-white rounded-2xl p-4 border border-slate-200 shadow-2xs">
           <div className="flex items-center justify-between text-slate-400 mb-2">
-            <span className="text-xs font-bold text-slate-600 uppercase tracking-wider">Today's Revenue</span>
+            <span className="text-xs font-bold text-slate-600 uppercase tracking-wider">
+              Today's Revenue
+            </span>
             <div className="p-2 bg-emerald-50 text-emerald-600 rounded-xl">
               <IndianRupee className="w-4 h-4" />
             </div>
           </div>
-          <p className="text-2xl font-black text-slate-900">₹{todayRevenue.toLocaleString('en-IN')}</p>
-          <span className="text-[10px] font-bold text-emerald-600 flex items-center gap-0.5 mt-1">
-            <TrendingUp className="w-3 h-3" /> Net settled daily
+          <p className="text-2xl font-black text-slate-900">
+            ₹{todayRevenue.toLocaleString('en-IN')}
+          </p>
+          <span className="text-[10px] font-semibold text-emerald-600 mt-1 block">
+            Direct Daily Settlement
           </span>
         </div>
 
         {/* Metric 3: In Kitchen Preparing */}
         <div className="bg-white rounded-2xl p-4 border border-slate-200 shadow-2xs">
           <div className="flex items-center justify-between text-slate-400 mb-2">
-            <span className="text-xs font-bold text-slate-600 uppercase tracking-wider">In Kitchen</span>
+            <span className="text-xs font-bold text-slate-600 uppercase tracking-wider">
+              In Kitchen
+            </span>
             <div className="p-2 bg-orange-50 text-orange-600 rounded-xl">
               <Utensils className="w-4 h-4" />
             </div>
           </div>
-          <p className="text-2xl font-black text-orange-600">{preparingCount}</p>
-          <span className="text-[10px] text-slate-400 mt-1 block">Active cooking</span>
+          <p className="text-2xl font-black text-orange-600">{inKitchenCount}</p>
+          <span className="text-[10px] text-slate-500 mt-1 block">
+            {inKitchenCount > 0 ? 'Active on cooktop' : 'No pending queue'}
+          </span>
         </div>
 
         {/* Metric 4: Completed */}
         <div className="bg-white rounded-2xl p-4 border border-slate-200 shadow-2xs">
           <div className="flex items-center justify-between text-slate-400 mb-2">
-            <span className="text-xs font-bold text-slate-600 uppercase tracking-wider">Completed</span>
+            <span className="text-xs font-bold text-slate-600 uppercase tracking-wider">
+              Completed
+            </span>
             <div className="p-2 bg-blue-50 text-blue-600 rounded-xl">
               <CheckCircle2 className="w-4 h-4" />
             </div>
           </div>
           <p className="text-2xl font-black text-slate-900">{completedCount}</p>
-          <span className="text-[10px] text-emerald-600 font-semibold mt-1 block">96% success rate</span>
+          <span className="text-[10px] text-emerald-600 font-semibold mt-1 block">
+            {todayOrdersCount > 0 ? `${completionRate}% fulfillment rate` : '100% target'}
+          </span>
         </div>
 
         {/* Metric 5: Cancelled */}
         <div className="bg-white rounded-2xl p-4 border border-slate-200 shadow-2xs col-span-2 sm:col-span-1">
           <div className="flex items-center justify-between text-slate-400 mb-2">
-            <span className="text-xs font-bold text-slate-600 uppercase tracking-wider">Cancelled</span>
+            <span className="text-xs font-bold text-slate-600 uppercase tracking-wider">
+              Cancelled
+            </span>
             <div className="p-2 bg-rose-50 text-rose-600 rounded-xl">
               <XCircle className="w-4 h-4" />
             </div>
           </div>
           <p className="text-2xl font-black text-slate-700">{cancelledCount}</p>
-          <span className="text-[10px] text-slate-400 mt-1 block">&lt; 2% defect rate</span>
+          <span className="text-[10px] text-slate-400 mt-1 block">
+            {todayOrdersCount > 0 ? `${((cancelledCount / todayOrdersCount) * 100).toFixed(0)}% rejection rate` : '0 rejections'}
+          </span>
         </div>
       </div>
 
       {/* 3. LIVE KITCHEN PIPELINE */}
-      {activeOrders.length > 0 && (
-        <div className="space-y-3">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <span className="w-2.5 h-2.5 rounded-full bg-feedo-500 live-pulse" />
-              <h2 className="text-sm font-bold text-slate-900 uppercase tracking-wider">
-                Live Kitchen Pipeline ({activeOrders.length})
-              </h2>
-            </div>
-            <button
-              onClick={() => setScreen('orders')}
-              className="text-xs font-bold text-feedo-600 hover:text-feedo-700 flex items-center gap-1"
-            >
-              <span>View All in Orders Hub</span>
-              <ChevronRight className="w-3.5 h-3.5" />
-            </button>
+      <div className="space-y-3">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <span className="w-2.5 h-2.5 rounded-full bg-feedo-500 live-pulse" />
+            <h2 className="text-sm font-bold text-slate-900 uppercase tracking-wider">
+              Live Kitchen Pipeline ({activeKitchenOrders.length})
+            </h2>
           </div>
+          <button
+            onClick={() => setScreen('orders')}
+            className="text-xs font-bold text-feedo-600 hover:text-feedo-700 flex items-center gap-1 cursor-pointer"
+          >
+            <span>View All in Orders Hub</span>
+            <ChevronRight className="w-3.5 h-3.5" />
+          </button>
+        </div>
 
+        {activeKitchenOrders.length === 0 ? (
+          <div className="bg-white rounded-2xl p-8 border border-slate-200 text-center space-y-2">
+            <div className="w-12 h-12 rounded-full bg-slate-50 text-slate-400 mx-auto flex items-center justify-center">
+              <Utensils className="w-6 h-6" />
+            </div>
+            <h3 className="text-sm font-bold text-slate-800">No Orders in Kitchen Queue</h3>
+            <p className="text-xs text-slate-500 max-w-sm mx-auto">
+              New customer orders placed via the FEEDO App will appear here in real time with instant sound alerts.
+            </p>
+          </div>
+        ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {activeOrders.map((order) => (
+            {activeKitchenOrders.map((order) => (
               <div
                 key={order.id}
                 onClick={() => setSelectedOrder(order)}
@@ -178,23 +249,34 @@ export const DashboardScreen: React.FC = () => {
                   <StatusBadge status={order.status} size="sm" />
                 </div>
 
+                {/* Customer Info (Privacy-Masked) */}
                 <div>
-                  <h4 className="text-xs font-bold text-slate-900">{order.customer.name}</h4>
-                  <p className="text-[11px] text-slate-500">{order.customer.area}</p>
+                  <h4 className="text-xs font-bold text-slate-900">
+                    {order.customer.name.split(' ')[0]} {order.customer.name.split(' ')[1]?.[0] || ''}.
+                  </h4>
+                  <p className="text-[11px] text-slate-500">
+                    Delivery Area: {order.customer.area}
+                  </p>
                 </div>
 
-                {/* Items summary */}
+                {/* Items Summary */}
                 <div className="bg-slate-50 rounded-xl p-2.5 text-xs text-slate-700 space-y-1">
                   {order.items.map((it) => (
                     <div key={it.id} className="flex justify-between text-[11px]">
-                      <span>{it.quantity} × {it.name}</span>
-                      <span className="font-mono text-slate-500">₹{it.price * it.quantity}</span>
+                      <span>
+                        {it.quantity} × {it.name}
+                      </span>
+                      <span className="font-mono text-slate-500">
+                        ₹{it.price * it.quantity}
+                      </span>
                     </div>
                   ))}
                 </div>
 
                 <div className="flex items-center justify-between pt-1 border-t border-slate-100 text-xs">
-                  <span className="font-mono font-bold text-feedo-600">Total: ₹{order.total}</span>
+                  <span className="font-mono font-bold text-feedo-600">
+                    Total: ₹{order.total}
+                  </span>
                   <span className="text-[11px] font-bold text-indigo-600 flex items-center gap-1">
                     <Eye className="w-3.5 h-3.5" /> Open Details
                   </span>
@@ -202,93 +284,88 @@ export const DashboardScreen: React.FC = () => {
               </div>
             ))}
           </div>
-        </div>
-      )}
+        )}
+      </div>
 
-      {/* 4. SALES TREND & TOP ITEMS ROW */}
+      {/* 4. QUICK ACTIONS & POPULAR ITEMS */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Sales Trend Chart (2 columns) */}
-        <div className="lg:col-span-2 bg-white rounded-3xl p-6 border border-slate-200 shadow-2xs space-y-4">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 pb-4">
-            <div>
-              <h3 className="text-base font-bold text-slate-900">Hourly Sales Overview</h3>
-              <p className="text-xs text-slate-500">Real-time revenue cadence across peak dining hours</p>
-            </div>
+        {/* Quick Actions (1 col) */}
+        <div className="bg-white rounded-3xl p-6 border border-slate-200 shadow-2xs space-y-4">
+          <h3 className="text-base font-bold text-slate-900 border-b border-slate-100 pb-3">
+            Quick Actions
+          </h3>
+          <div className="grid grid-cols-2 gap-3">
+            <button
+              onClick={() => setScreen('menu')}
+              className="p-3.5 bg-slate-50 hover:bg-feedo-50 hover:text-feedo-700 text-slate-800 rounded-2xl border border-slate-200 text-left transition-colors cursor-pointer group"
+            >
+              <Plus className="w-5 h-5 text-feedo-500 mb-2 group-hover:scale-110 transition-transform" />
+              <span className="text-xs font-bold block">Add Menu Item</span>
+              <span className="text-[10px] text-slate-500">Update dishes & prices</span>
+            </button>
 
-            <div className="flex gap-1 bg-slate-100 p-1 rounded-xl text-xs">
-              {(['today', 'week', 'month'] as const).map((period) => (
-                <button
-                  key={period}
-                  onClick={() => setChartPeriod(period)}
-                  className={`px-3 py-1 rounded-lg font-bold capitalize transition-colors ${
-                    chartPeriod === period
-                      ? 'bg-white text-feedo-600 shadow-2xs'
-                      : 'text-slate-600 hover:text-slate-900'
-                  }`}
-                >
-                  {period}
-                </button>
-              ))}
-            </div>
-          </div>
+            <button
+              onClick={() => setScreen('orders')}
+              className="p-3.5 bg-slate-50 hover:bg-feedo-50 hover:text-feedo-700 text-slate-800 rounded-2xl border border-slate-200 text-left transition-colors cursor-pointer group"
+            >
+              <Utensils className="w-5 h-5 text-indigo-500 mb-2 group-hover:scale-110 transition-transform" />
+              <span className="text-xs font-bold block">View Orders</span>
+              <span className="text-[10px] text-slate-500">Kitchen & history</span>
+            </button>
 
-          {/* Bar Visualization */}
-          <div className="h-56 flex items-end justify-between gap-2 pt-6 px-2">
-            {[
-              { label: '11 AM', height: '30%', val: '₹840' },
-              { label: '12 PM', height: '65%', val: '₹2,680' },
-              { label: '1 PM', height: '95%', val: '₹4,120' },
-              { label: '2 PM', height: '60%', val: '₹2,310' },
-              { label: '3 PM', height: '20%', val: '₹390' },
-              { label: '4 PM', height: '15%', val: '₹0' },
-              { label: '5 PM', height: '25%', val: '₹420' },
-              { label: '6 PM', height: '40%', val: '₹1,200' },
-              { label: '7 PM', height: '80%', val: '₹3,450' },
-            ].map((bar) => (
-              <div key={bar.label} className="flex-1 flex flex-col items-center gap-2 group h-full justify-end">
-                <span className="text-[10px] font-bold text-slate-600 opacity-0 group-hover:opacity-100 transition-opacity">
-                  {bar.val}
-                </span>
-                <div
-                  style={{ height: bar.height }}
-                  className="w-full max-w-[36px] bg-gradient-to-t from-feedo-500 to-amber-400 rounded-t-lg group-hover:from-feedo-600 group-hover:to-amber-500 transition-all shadow-xs"
-                />
-                <span className="text-[11px] font-bold text-slate-500">{bar.label}</span>
-              </div>
-            ))}
+            <button
+              onClick={() => setScreen('profile')}
+              className="p-3.5 bg-slate-50 hover:bg-feedo-50 hover:text-feedo-700 text-slate-800 rounded-2xl border border-slate-200 text-left transition-colors cursor-pointer group"
+            >
+              <Store className="w-5 h-5 text-emerald-500 mb-2 group-hover:scale-110 transition-transform" />
+              <span className="text-xs font-bold block">Manage Store</span>
+              <span className="text-[10px] text-slate-500">Hours & branding</span>
+            </button>
+
+            <button
+              onClick={() => setScreen('earnings')}
+              className="p-3.5 bg-slate-50 hover:bg-feedo-50 hover:text-feedo-700 text-slate-800 rounded-2xl border border-slate-200 text-left transition-colors cursor-pointer group"
+            >
+              <IndianRupee className="w-5 h-5 text-amber-500 mb-2 group-hover:scale-110 transition-transform" />
+              <span className="text-xs font-bold block">View Payouts</span>
+              <span className="text-[10px] text-slate-500">Daily bank settlements</span>
+            </button>
           </div>
         </div>
 
-        {/* Top Selling Items (1 column) */}
-        <div className="bg-white rounded-3xl p-6 border border-slate-200 shadow-2xs space-y-4">
-          <div className="flex items-center justify-between border-b border-slate-100 pb-4">
+        {/* Top Selling Items (2 cols) */}
+        <div className="lg:col-span-2 bg-white rounded-3xl p-6 border border-slate-200 shadow-2xs space-y-4">
+          <div className="flex items-center justify-between border-b border-slate-100 pb-3">
             <div>
-              <h3 className="text-base font-bold text-slate-900">Top Selling Items</h3>
-              <p className="text-xs text-slate-500">Diner favorites today</p>
+              <h3 className="text-base font-bold text-slate-900">Bestselling Menu Items</h3>
+              <p className="text-xs text-slate-500">Customer favorites and high-demand specials</p>
             </div>
             <button
               onClick={() => setScreen('menu')}
-              className="text-xs font-bold text-feedo-600 hover:underline"
+              className="text-xs font-bold text-feedo-600 hover:underline cursor-pointer"
             >
-              Menu →
+              Manage Menu →
             </button>
           </div>
 
-          <div className="space-y-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             {topItems.map((item, idx) => (
-              <div key={item.id} className="flex items-center gap-3 p-2 rounded-xl hover:bg-slate-50 transition-colors">
+              <div
+                key={item.id}
+                className="flex items-center gap-3 p-3 rounded-2xl border border-slate-100 hover:border-feedo-200 hover:bg-slate-50 transition-colors"
+              >
                 <span className="w-5 text-xs font-black text-slate-400">{idx + 1}.</span>
                 <img
                   src={item.imageUrl}
                   alt={item.name}
-                  className="w-10 h-10 rounded-xl object-cover border border-slate-200 shrink-0"
+                  className="w-12 h-12 rounded-xl object-cover border border-slate-200 shrink-0"
                 />
                 <div className="flex-1 min-w-0">
                   <h4 className="text-xs font-bold text-slate-900 truncate">{item.name}</h4>
                   <p className="text-[11px] text-slate-500 font-mono">₹{item.price}</p>
                 </div>
                 <span className="text-xs font-bold text-amber-500 flex items-center gap-0.5">
-                  <Star className="w-3 h-3 fill-amber-400" /> {item.rating}
+                  <Star className="w-3.5 h-3.5 fill-amber-400" /> {item.rating}
                 </span>
               </div>
             ))}
@@ -301,11 +378,11 @@ export const DashboardScreen: React.FC = () => {
         <div className="flex items-center justify-between border-b border-slate-100 pb-4">
           <div>
             <h3 className="text-base font-bold text-slate-900">Recent Customer Orders</h3>
-            <p className="text-xs text-slate-500">Full order ledger and delivery partner logs</p>
+            <p className="text-xs text-slate-500">Live order audit records and handover status</p>
           </div>
           <button
             onClick={() => setScreen('orders')}
-            className="text-xs font-bold text-feedo-600 hover:underline"
+            className="text-xs font-bold text-feedo-600 hover:underline cursor-pointer"
           >
             See All Orders →
           </button>
@@ -335,7 +412,9 @@ export const DashboardScreen: React.FC = () => {
                     #{order.id}
                   </td>
                   <td className="py-3.5 px-3">
-                    <span className="font-bold text-slate-900 block">{order.customer.name}</span>
+                    <span className="font-bold text-slate-900 block">
+                      {order.customer.name.split(' ')[0]} {order.customer.name.split(' ')[1]?.[0] || ''}.
+                    </span>
                     <span className="text-[10px] text-slate-400">{order.customer.area}</span>
                   </td>
                   <td className="py-3.5 px-3 text-slate-600">

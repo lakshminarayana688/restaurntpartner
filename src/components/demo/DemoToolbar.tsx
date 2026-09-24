@@ -19,7 +19,12 @@ export const DemoToolbar: React.FC = () => {
     viewMode,
     setViewMode,
     resetAllDemoData,
+    isPrototypeMode,
   } = useApp();
+
+  if (!isPrototypeMode) {
+    return null;
+  }
 
   const screens: { id: ScreenName; label: string; group: string }[] = [
     // Pre-Auth / Onboarding

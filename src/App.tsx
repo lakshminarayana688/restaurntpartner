@@ -54,6 +54,7 @@ const MainAppContent: React.FC = () => {
     setIsDatabaseModalOpen,
     isDownloadModalOpen,
     setIsDownloadModalOpen,
+    isPrototypeMode,
   } = useApp();
 
   const isPreAuth = [
@@ -142,21 +143,23 @@ const MainAppContent: React.FC = () => {
       </div>
       <MobileBottomNav />
 
-      {/* Floating Action Button (FAB) in bottom right */}
-      <div className="fixed bottom-20 md:bottom-8 right-6 z-30 flex flex-col gap-2.5">
-        <button
-          onClick={simulateNewIncomingOrder}
-          title="Simulate New Order"
-          className="w-14 h-14 rounded-full bg-gradient-to-tr from-feedo-600 via-feedo-500 to-amber-400 text-white shadow-xl shadow-feedo-500/40 flex items-center justify-center hover:scale-110 active:scale-95 transition-all cursor-pointer border-2 border-white"
-        >
-          <Zap className="w-6 h-6 fill-current animate-pulse" />
-        </button>
-      </div>
+      {/* Floating Action Button only in Prototype Mode */}
+      {isPrototypeMode && (
+        <div className="fixed bottom-20 md:bottom-8 right-6 z-30 flex flex-col gap-2.5">
+          <button
+            onClick={simulateNewIncomingOrder}
+            title="Simulate New Order"
+            className="w-14 h-14 rounded-full bg-gradient-to-tr from-feedo-600 via-feedo-500 to-amber-400 text-white shadow-xl shadow-feedo-500/40 flex items-center justify-center hover:scale-110 active:scale-95 transition-all cursor-pointer border-2 border-white"
+          >
+            <Zap className="w-6 h-6 fill-current animate-pulse" />
+          </button>
+        </div>
+      )}
     </div>
   );
 
   return (
-    <div className="min-h-screen bg-slate-950 flex flex-col">
+    <div className="min-h-screen bg-slate-50 flex flex-col">
       <DemoToolbar />
 
       {/* Modals & Slide-overs */}
@@ -175,24 +178,19 @@ const MainAppContent: React.FC = () => {
         onClose={() => setIsDownloadModalOpen(false)}
       />
 
-      {/* Main Content Area: Responsive View vs Smartphone Frame Preview */}
-      {viewMode === 'responsive' ? (
+      {/* Main Responsive Application */}
+      {!isPrototypeMode || viewMode === 'responsive' ? (
         <div className="flex-1">{appView}</div>
       ) : (
         <div className="flex-1 flex items-center justify-center p-4 sm:p-8 bg-slate-900 overflow-y-auto">
-          {/* Smartphone Frame Container */}
+          {/* Smartphone Frame Container (Only available in Prototype Mode) */}
           <div className="relative w-full max-w-[420px] h-[860px] bg-black rounded-[48px] p-3.5 shadow-2xl border-4 border-slate-700 overflow-hidden flex flex-col">
-            {/* Phone Top Notch & Camera */}
             <div className="absolute top-4 left-1/2 -translate-x-1/2 w-36 h-5 bg-black rounded-full z-50 flex items-center justify-center">
               <div className="w-3 h-3 rounded-full bg-slate-900 border border-slate-800" />
             </div>
-
-            {/* Inner Screen */}
             <div className="w-full h-full bg-slate-50 rounded-[38px] overflow-hidden overflow-y-auto relative flex flex-col">
               {appView}
             </div>
-
-            {/* Bottom Home Indicator Bar */}
             <div className="absolute bottom-2 left-1/2 -translate-x-1/2 w-32 h-1 bg-white/40 rounded-full z-50 pointer-events-none" />
           </div>
         </div>

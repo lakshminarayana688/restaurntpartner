@@ -3,34 +3,54 @@ import { useApp } from '../../context/AppContext';
 import {
   IndianRupee,
   TrendingUp,
-  DollarSign,
   Download,
   CreditCard,
-  Wallet,
   Building,
   AlertTriangle,
   ArrowUpRight,
-  ArrowDownRight,
   CheckCircle2,
-  Clock,
-  Sparkles,
-  PieChart,
+  Lock,
+  FileText,
+  ShieldCheck,
 } from 'lucide-react';
 
 export const FinanceScreen: React.FC = () => {
-  const { restaurant, showToast } = useApp();
-  const [selectedQuarter, setSelectedQuarter] = useState<'Q1' | 'Q2' | 'Q3' | 'Q4'>('Q1');
+  const { restaurant, settlements, showToast, currentUserRole, setScreen } = useApp();
+  const [selectedPeriod, setSelectedPeriod] = useState<'daily' | 'weekly' | 'monthly'>('daily');
 
-  const invoices = [
-    { id: 'INV-2026-0841', date: '18 Sep 2026', amount: '₹14,207.00', status: 'Paid', method: 'Direct Bank NEFT' },
-    { id: 'INV-2026-0840', date: '17 Sep 2026', amount: '₹11,728.00', status: 'Paid', method: 'Direct Bank NEFT' },
-    { id: 'INV-2026-0839', date: '16 Sep 2026', amount: '₹11,396.00', status: 'Paid', method: 'Direct Bank NEFT' },
-    { id: 'INV-2026-0838', date: '15 Sep 2026', amount: '₹15,246.00', status: 'Paid', method: 'Direct Bank NEFT' },
-    { id: 'INV-2026-0837', date: '14 Sep 2026', amount: '₹12,482.00', status: 'Processing', method: 'Under Clearing' },
-  ];
+  // Role Gate: Finance is strictly OWNER only
+  if (currentUserRole !== 'OWNER') {
+    return (
+      <div className="p-6 sm:p-12 max-w-2xl mx-auto text-center space-y-4">
+        <div className="w-16 h-16 rounded-3xl bg-slate-100 border border-slate-200 text-slate-500 mx-auto flex items-center justify-center">
+          <Lock className="w-8 h-8" />
+        </div>
+        <h2 className="text-xl font-black text-slate-900">Finance & Banking Restricted</h2>
+        <p className="text-xs text-slate-500 leading-relaxed">
+          Access to bank accounts, statutory tax reports, and financial settlement ledgers is restricted strictly to the <strong>Restaurant Owner</strong>.
+        </p>
+        <button
+          onClick={() => setScreen('dashboard')}
+          className="px-5 py-2.5 bg-slate-900 text-white font-bold text-xs rounded-xl hover:bg-slate-800 transition-colors cursor-pointer"
+        >
+          Return to Overview
+        </button>
+      </div>
+    );
+  }
+
+  const grossRevenue = settlements.reduce((sum, s) => sum + s.grossAmount, 0);
+  const totalCommission = settlements.reduce((sum, s) => sum + s.commission, 0);
+  const totalTaxes = settlements.reduce((sum, s) => sum + s.taxes, 0);
+  const netSettled = settlements.reduce((sum, s) => sum + s.netPayout, 0);
+
+  // Bank masking: display only last 4 digits
+  const bankLast4 = restaurant.bankAccount.slice(-4) || '9921';
+  const maskedAccount = `•••• •••• •••• ${bankLast4}`;
+  const maskedIfsc = `${restaurant.ifscCode.slice(0, 4)}•••••••`;
 
   const handleRequestPayout = () => {
-    showToast('Payout request for ₹12,482 initiated! Expected in bank within 2 hours.', 'success');
+    showToast('Direct bank settlement for today’s balance initiated! Funds clearing via NEFT.', 'success');
   };
 
   return (
@@ -40,23 +60,23 @@ export const FinanceScreen: React.FC = () => {
         <div>
           <div className="flex items-center gap-2 mb-1">
             <span className="text-xs font-mono font-bold bg-slate-100 text-slate-700 px-2 py-0.5 rounded-md">
-              Partner ID: FD-BLR-9921
+              Merchant ID: FD-BLR-{bankLast4}
             </span>
             <span className="text-xs text-emerald-600 font-semibold flex items-center gap-1">
               <CheckCircle2 className="w-3.5 h-3.5" /> Direct Settlement Active
             </span>
           </div>
           <h1 className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight">
-            Financial Management
+            Finance & Settlements
           </h1>
           <p className="text-xs text-slate-500 mt-0.5">
-            Real-time ledger, tax reconciliation, payment channel analytics, and instant payout clearing.
+            Automated daily bank payouts, commission deductions, GST tax invoices, and bank account settings.
           </p>
         </div>
 
         <div className="flex items-center gap-3">
           <button
-            onClick={() => showToast('Full financial audit statement downloaded (PDF)', 'info')}
+            onClick={() => showToast('Financial settlement ledger exported to PDF', 'info')}
             className="py-2.5 px-4 bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 font-bold text-xs rounded-xl shadow-2xs flex items-center gap-2 transition-colors cursor-pointer"
           >
             <Download className="w-4 h-4 text-slate-500" />
@@ -65,46 +85,51 @@ export const FinanceScreen: React.FC = () => {
         </div>
       </div>
 
-      {/* 4 Stat Cards */}
+      {/* 4 Financial Metric Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        {/* Card 1: Total Revenue */}
+        {/* Card 1: Gross Revenue */}
         <div className="bg-white rounded-3xl p-6 border border-slate-200 shadow-2xs space-y-2">
           <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">
-            Total Gross Revenue
+            Total Gross Orders
           </span>
-          <h3 className="text-3xl font-black text-slate-900">₹84,250</h3>
+          <h3 className="text-3xl font-black text-slate-900">
+            ₹{grossRevenue.toLocaleString('en-IN')}
+          </h3>
           <span className="text-xs font-bold text-emerald-600 flex items-center gap-1">
-            <ArrowUpRight className="w-3.5 h-3.5" /> +18.0% this month
+            <ArrowUpRight className="w-3.5 h-3.5" /> Verified by Payment Gateway
           </span>
         </div>
 
-        {/* Card 2: Total Expenses */}
+        {/* Card 2: Platform Commission & GST */}
         <div className="bg-white rounded-3xl p-6 border border-slate-200 shadow-2xs space-y-2">
           <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">
-            Commission & Fees
+            Commission & Platform GST
           </span>
-          <h3 className="text-3xl font-black text-slate-700">₹22,410</h3>
-          <span className="text-xs text-slate-400">Includes 18% FEEDO fee + 5% GST</span>
+          <h3 className="text-3xl font-black text-slate-700">
+            ₹{(totalCommission + totalTaxes).toLocaleString('en-IN')}
+          </h3>
+          <span className="text-xs text-slate-400">18% Commission + 18% GST on Fee</span>
         </div>
 
-        {/* Card 3: Profit Margin */}
+        {/* Card 3: Net Settled Amount */}
         <div className="bg-white rounded-3xl p-6 border border-slate-200 shadow-2xs space-y-2">
           <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">
-            Net Profit Margin
+            Net Paid Out to Bank
           </span>
-          <h3 className="text-3xl font-black text-emerald-600">73.4%</h3>
-          <span className="text-xs font-bold text-emerald-600 flex items-center gap-1">
-            <ArrowUpRight className="w-3.5 h-3.5" /> +2.1% efficiency
-          </span>
+          <h3 className="text-3xl font-black text-emerald-600">
+            ₹{netSettled.toLocaleString('en-IN')}
+          </h3>
+          <span className="text-xs text-slate-500">Transferred directly to {restaurant.bankName.split(' ')[0]}</span>
         </div>
 
-        {/* Card 4: Pending Payout with Button */}
+        {/* Card 4: Next Expected Payout */}
         <div className="bg-gradient-to-br from-feedo-500 to-amber-500 rounded-3xl p-6 text-white shadow-lg shadow-feedo-500/20 flex flex-col justify-between space-y-3">
           <div>
             <span className="text-xs font-bold uppercase tracking-wider text-feedo-100">
-              Pending Payout
+              Next Daily Settlement
             </span>
-            <h3 className="text-3xl font-black">₹12,482</h3>
+            <h3 className="text-3xl font-black">₹14,207</h3>
+            <span className="text-[11px] text-amber-100">Scheduled: Tomorrow 10:00 AM</span>
           </div>
           <button
             onClick={handleRequestPayout}
@@ -115,111 +140,9 @@ export const FinanceScreen: React.FC = () => {
         </div>
       </div>
 
-      {/* Revenue vs Expenses Quarterly Stacked Bars & Payment Channels Section */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Comparison Chart (2 cols) */}
-        <div className="lg:col-span-2 bg-white rounded-3xl p-6 border border-slate-200 shadow-2xs space-y-4">
-          <div className="flex items-center justify-between border-b border-slate-100 pb-4">
-            <div>
-              <h3 className="text-base font-bold text-slate-900">Revenue vs Platform Expenses</h3>
-              <p className="text-xs text-slate-500">Monthly breakdown of gross earnings against deductions</p>
-            </div>
-            <div className="flex items-center gap-3 text-xs">
-              <span className="flex items-center gap-1.5 font-semibold text-slate-700">
-                <span className="w-3 h-3 rounded-sm bg-feedo-500 inline-block" /> Net Revenue
-              </span>
-              <span className="flex items-center gap-1.5 font-semibold text-slate-500">
-                <span className="w-3 h-3 rounded-sm bg-slate-300 inline-block" /> Platform Cost
-              </span>
-            </div>
-          </div>
-
-          <div className="h-60 flex items-end justify-between gap-4 pt-6 px-4">
-            {[
-              { month: 'Jan', net: '65%', exp: '20%', netVal: '₹62.5k', expVal: '₹14k' },
-              { month: 'Feb', net: '72%', exp: '22%', netVal: '₹71.0k', expVal: '₹16k' },
-              { month: 'Mar', net: '84%', exp: '25%', netVal: '₹84.2k', expVal: '₹22k' },
-              { month: 'Apr (Est)', net: '90%', exp: '26%', netVal: '₹95.0k', expVal: '₹24k' },
-            ].map((col) => (
-              <div key={col.month} className="flex-1 flex flex-col items-center gap-2 group h-full justify-end">
-                <span className="text-[10px] font-bold text-slate-600 opacity-0 group-hover:opacity-100 transition-opacity">
-                  {col.netVal}
-                </span>
-                <div className="w-full max-w-[56px] flex flex-col items-center">
-                  <div
-                    style={{ height: col.exp }}
-                    className="w-full bg-slate-300 rounded-t-md mb-0.5"
-                    title={`Expenses: ${col.expVal}`}
-                  />
-                  <div
-                    style={{ height: col.net }}
-                    className="w-full bg-gradient-to-t from-feedo-600 to-feedo-500 rounded-b-md shadow-xs"
-                    title={`Net Revenue: ${col.netVal}`}
-                  />
-                </div>
-                <span className="text-xs font-bold text-slate-600">{col.month}</span>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        {/* Payment Channels Breakdown (1 col Dark Card) */}
-        <div className="bg-slate-900 rounded-3xl p-6 text-white border border-slate-800 shadow-xl space-y-5 flex flex-col justify-between">
-          <div>
-            <div className="flex items-center justify-between border-b border-slate-800 pb-3 mb-4">
-              <h3 className="text-sm font-bold text-white flex items-center gap-2">
-                <CreditCard className="w-4 h-4 text-feedo-400" />
-                <span>Payment Channels</span>
-              </h3>
-              <span className="text-[10px] text-slate-400 uppercase">Q1 Breakdown</span>
-            </div>
-
-            <div className="space-y-4">
-              {/* Channel 1 */}
-              <div>
-                <div className="flex justify-between text-xs mb-1">
-                  <span className="text-slate-300 font-medium">Credit / Debit Cards</span>
-                  <span className="font-bold text-feedo-400">64%</span>
-                </div>
-                <div className="w-full bg-slate-800 h-2 rounded-full overflow-hidden">
-                  <div className="bg-feedo-500 h-full w-[64%] rounded-full" />
-                </div>
-              </div>
-
-              {/* Channel 2 */}
-              <div>
-                <div className="flex justify-between text-xs mb-1">
-                  <span className="text-slate-300 font-medium">UPI & Mobile Wallets</span>
-                  <span className="font-bold text-emerald-400">22%</span>
-                </div>
-                <div className="w-full bg-slate-800 h-2 rounded-full overflow-hidden">
-                  <div className="bg-emerald-500 h-full w-[22%] rounded-full" />
-                </div>
-              </div>
-
-              {/* Channel 3 */}
-              <div>
-                <div className="flex justify-between text-xs mb-1">
-                  <span className="text-slate-300 font-medium">Cash on Delivery (COD)</span>
-                  <span className="font-bold text-amber-400">14%</span>
-                </div>
-                <div className="w-full bg-slate-800 h-2 rounded-full overflow-hidden">
-                  <div className="bg-amber-400 h-full w-[14%] rounded-full" />
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <div className="pt-3 border-t border-slate-800 text-[11px] text-slate-400 flex items-center gap-2">
-            <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
-            <span>All digital gateway charges waived under FEEDO SuperPartner tier.</span>
-          </div>
-        </div>
-      </div>
-
-      {/* Bank Account Panel & Q1 Tax Notice */}
+      {/* Verified Bank Account Panel & Q1 Tax Notice */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Bank Details */}
+        {/* Bank Account Details (Masked) */}
         <div className="bg-white rounded-3xl p-6 border border-slate-200 shadow-2xs space-y-4">
           <div className="flex items-center justify-between border-b border-slate-100 pb-3">
             <div className="flex items-center gap-2.5">
@@ -228,69 +151,71 @@ export const FinanceScreen: React.FC = () => {
               </div>
               <div>
                 <h3 className="text-sm font-bold text-slate-900">Settlement Bank Account</h3>
-                <p className="text-[11px] text-emerald-600 font-semibold">✓ Verified for Automated Daily Clearing</p>
+                <p className="text-[11px] text-emerald-600 font-semibold">
+                  ✓ Verified for Automated Daily NEFT Clearing
+                </p>
               </div>
             </div>
             <button
-              onClick={() => showToast('Bank modification requests require KYC re-verification', 'info')}
-              className="text-xs font-bold text-feedo-600 hover:underline"
+              onClick={() => showToast('Bank modifications require KYC re-verification with OTP', 'info')}
+              className="text-xs font-bold text-feedo-600 hover:underline cursor-pointer"
             >
-              Update Details
+              Update Bank
             </button>
           </div>
 
           <div className="grid grid-cols-2 gap-3 text-xs bg-slate-50 p-4 rounded-2xl border border-slate-100">
             <div>
-              <span className="text-slate-400 block text-[10px] uppercase">Bank Entity</span>
+              <span className="text-slate-400 block text-[10px] uppercase font-bold">Bank Name</span>
               <span className="font-bold text-slate-900">{restaurant.bankName}</span>
             </div>
             <div>
-              <span className="text-slate-400 block text-[10px] uppercase">Account Number</span>
-              <span className="font-mono font-bold text-slate-900">{restaurant.bankAccount}</span>
+              <span className="text-slate-400 block text-[10px] uppercase font-bold">Account (Masked)</span>
+              <span className="font-mono font-bold text-slate-900">{maskedAccount}</span>
             </div>
             <div>
-              <span className="text-slate-400 block text-[10px] uppercase">IFSC Code</span>
-              <span className="font-mono font-bold text-slate-700">{restaurant.ifscCode}</span>
+              <span className="text-slate-400 block text-[10px] uppercase font-bold">IFSC Code</span>
+              <span className="font-mono font-bold text-slate-700">{maskedIfsc}</span>
             </div>
             <div>
-              <span className="text-slate-400 block text-[10px] uppercase">Payout Frequency</span>
+              <span className="text-slate-400 block text-[10px] uppercase font-bold">Payout Cadence</span>
               <span className="font-bold text-emerald-700">Daily by 10:00 AM</span>
             </div>
           </div>
         </div>
 
-        {/* Q1 Tax Notice Gradient Card */}
-        <div className="bg-gradient-to-br from-amber-500 via-feedo-500 to-rose-500 rounded-3xl p-6 text-white shadow-lg space-y-3 flex flex-col justify-between">
+        {/* GST & Tax Compliance */}
+        <div className="bg-gradient-to-br from-slate-900 via-slate-800 to-feedo-950 rounded-3xl p-6 text-white shadow-lg space-y-3 flex flex-col justify-between border border-slate-800">
           <div>
             <div className="flex items-center gap-2 mb-2">
-              <AlertTriangle className="w-5 h-5 text-amber-200" />
-              <h3 className="text-base font-black">Q1 Statutory Tax Summary Ready</h3>
+              <ShieldCheck className="w-5 h-5 text-emerald-400" />
+              <h3 className="text-base font-black">Statutory GST & TCS Summary</h3>
             </div>
-            <p className="text-xs text-amber-100 leading-relaxed">
-              Your TCS (Tax Collected at Source under GST Sec 52) certificate and GST input credit report for Jan-Mar 2026 is ready for monthly filing reconciliation.
+            <p className="text-xs text-slate-300 leading-relaxed">
+              TCS (Tax Collected at Source under GST Section 52) certificates and monthly GSTR-8 input tax credit filings are generated automatically.
             </p>
           </div>
 
-          <div className="flex items-center justify-between pt-2">
-            <span className="text-xs font-mono font-bold bg-white/20 px-2.5 py-1 rounded-lg">
-              GSTIN: {restaurant.gstNumber || '29AABCL9921D1Z5'}
+          <div className="flex items-center justify-between pt-2 border-t border-slate-800">
+            <span className="text-xs font-mono font-bold text-slate-300">
+              GSTIN: {restaurant.gstNumber || '29AABCL9921D1Z8'}
             </span>
             <button
-              onClick={() => showToast('TCS GSTR-8 report downloaded (CSV)', 'success')}
-              className="px-4 py-2 bg-white text-feedo-700 hover:bg-slate-100 font-bold text-xs rounded-xl shadow-md cursor-pointer"
+              onClick={() => showToast('GSTR-8 monthly report downloaded', 'success')}
+              className="px-4 py-2 bg-feedo-500 hover:bg-feedo-600 text-white font-bold text-xs rounded-xl shadow-md cursor-pointer transition-colors"
             >
-              Download GSTR-8 File →
+              Download GSTR-8 →
             </button>
           </div>
         </div>
       </div>
 
-      {/* Invoice History Table */}
+      {/* Settlement Records Table */}
       <div className="bg-white rounded-3xl p-6 border border-slate-200 shadow-2xs space-y-4">
         <div className="flex items-center justify-between border-b border-slate-100 pb-3">
           <div>
-            <h3 className="text-base font-bold text-slate-900">Settlement Invoices & Transfer Logs</h3>
-            <p className="text-xs text-slate-500">Official digital receipts with UTR bank reference IDs</p>
+            <h3 className="text-base font-bold text-slate-900">Settlement Ledger & Bank Reference IDs</h3>
+            <p className="text-xs text-slate-500">Immutable financial payout transaction records with UTR clearing numbers</p>
           </div>
         </div>
 
@@ -298,36 +223,50 @@ export const FinanceScreen: React.FC = () => {
           <table className="w-full text-left text-xs">
             <thead>
               <tr className="border-b border-slate-100 text-slate-400 font-bold uppercase tracking-wider">
-                <th className="pb-3 px-3">Invoice ID</th>
+                <th className="pb-3 px-3">Settlement Ref</th>
                 <th className="pb-3 px-3">Date</th>
-                <th className="pb-3 px-3">Amount</th>
-                <th className="pb-3 px-3">Settlement Method</th>
+                <th className="pb-3 px-3">Gross Sales</th>
+                <th className="pb-3 px-3">Commission (18%)</th>
+                <th className="pb-3 px-3">Taxes</th>
+                <th className="pb-3 px-3">Net Payout</th>
                 <th className="pb-3 px-3">Status</th>
-                <th className="pb-3 px-3 text-right">Actions</th>
+                <th className="pb-3 px-3 text-right">Receipt</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
-              {invoices.map((inv) => (
-                <tr key={inv.id} className="hover:bg-slate-50 transition-colors">
-                  <td className="py-3.5 px-3 font-mono font-bold text-slate-900">{inv.id}</td>
-                  <td className="py-3.5 px-3 text-slate-500">{inv.date}</td>
-                  <td className="py-3.5 px-3 font-mono font-black text-slate-900">{inv.amount}</td>
-                  <td className="py-3.5 px-3 text-slate-600">{inv.method}</td>
+              {settlements.map((record) => (
+                <tr key={record.id} className="hover:bg-slate-50 transition-colors">
+                  <td className="py-3.5 px-3 font-mono font-bold text-slate-900">
+                    {record.payoutRef}
+                  </td>
+                  <td className="py-3.5 px-3 text-slate-500">{record.date}</td>
+                  <td className="py-3.5 px-3 font-mono font-bold text-slate-900">
+                    ₹{record.grossAmount.toLocaleString('en-IN')}
+                  </td>
+                  <td className="py-3.5 px-3 font-mono text-slate-600">
+                    -₹{record.commission.toLocaleString('en-IN')}
+                  </td>
+                  <td className="py-3.5 px-3 font-mono text-slate-600">
+                    -₹{record.taxes.toLocaleString('en-IN')}
+                  </td>
+                  <td className="py-3.5 px-3 font-mono font-black text-emerald-600">
+                    ₹{record.netPayout.toLocaleString('en-IN')}
+                  </td>
                   <td className="py-3.5 px-3">
                     <span
                       className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold ${
-                        inv.status === 'Paid'
+                        record.status === 'SETTLED'
                           ? 'bg-emerald-100 text-emerald-800'
                           : 'bg-amber-100 text-amber-800'
                       }`}
                     >
-                      {inv.status === 'Paid' ? '✓ Paid' : '⏳ Processing'}
+                      {record.status === 'SETTLED' ? '✓ Settled' : '⏳ Processing'}
                     </span>
                   </td>
                   <td className="py-3.5 px-3 text-right">
                     <button
-                      onClick={() => showToast(`Invoice ${inv.id} downloaded`, 'success')}
-                      className="text-xs font-bold text-feedo-600 hover:underline"
+                      onClick={() => showToast(`Settlement receipt ${record.payoutRef} downloaded`, 'success')}
+                      className="text-xs font-bold text-feedo-600 hover:underline cursor-pointer"
                     >
                       View Receipt →
                     </button>
