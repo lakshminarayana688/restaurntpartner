@@ -7,7 +7,7 @@ serve(async (req: Request) => {
   const corsResponse = handleCors(req);
   if (corsResponse) return corsResponse;
 
-  if (req.method !== 'PATCH' && req.method !== 'PUT') {
+  if (req.method !== 'POST' && req.method !== 'PATCH' && req.method !== 'PUT') {
     return createErrorResponse('Method not allowed', 405);
   }
 

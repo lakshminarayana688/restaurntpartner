@@ -70,6 +70,7 @@ export const initialDocuments: VerificationDocument[] = [
 ];
 
 export const initialRestaurantDetails: RestaurantDetails = {
+  id: 'a0000000-0000-0000-0000-000000000001',
   ownerName: 'Lakshmi Narayana',
   ownerPhone: '+91 98765 43210',
   ownerEmail: 'lucky.family.blr@feedopartner.com',

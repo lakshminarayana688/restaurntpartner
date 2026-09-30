@@ -9,7 +9,20 @@ serve(async (req: Request) => {
 
   try {
     const url = new URL(req.url);
-    const restaurantId = url.searchParams.get('restaurant_id') || req.headers.get('x-restaurant-id') || '';
+    let bodyParams: Record<string, any> = {};
+    if (req.method === 'POST') {
+      try {
+        bodyParams = await req.json();
+      } catch (_) {
+        bodyParams = {};
+      }
+    }
+
+    const restaurantId =
+      bodyParams.restaurant_id ||
+      url.searchParams.get('restaurant_id') ||
+      req.headers.get('x-restaurant-id') ||
+      '';
 
     if (!restaurantId) {
       return createErrorResponse('Missing restaurant_id parameter', 400);
@@ -24,8 +37,13 @@ serve(async (req: Request) => {
 
     const { adminClient } = authContext;
 
-    const limit = Math.min(100, parseInt(url.searchParams.get('limit') || '50', 10));
-    const action = url.searchParams.get('action');
+    const limit = Math.min(
+      100,
+      parseInt(bodyParams.limit || url.searchParams.get('limit') || '50', 10)
+    );
+    const action = bodyParams.action || url.searchParams.get('action');
+    const resourceType = bodyParams.resource_type || url.searchParams.get('resource_type');
+    const userId = bodyParams.user_id || url.searchParams.get('user_id');
 
     let query = adminClient
       .from('audit_logs')
@@ -36,6 +54,12 @@ serve(async (req: Request) => {
 
     if (action) {
       query = query.eq('action', action);
+    }
+    if (resourceType) {
+      query = query.eq('resource_type', resourceType);
+    }
+    if (userId) {
+      query = query.eq('user_id', userId);
     }
 
     const { data: logs, error: logErr } = await query;

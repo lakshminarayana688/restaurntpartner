@@ -34,6 +34,7 @@ export interface VerificationDocument {
 }
 
 export interface RestaurantDetails {
+  id?: string;
   ownerName: string;
   ownerPhone: string;
   ownerEmail: string;

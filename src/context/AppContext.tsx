@@ -10,7 +10,7 @@ import { initialOrders } from '../data/initialOrders';
 import { initialReviews, initialOffers, initialSettlements } from '../data/initialExtras';
 import { soundEffects } from '../utils/audio';
 
-import { isSupabaseConfigured, getSupabaseClient } from '../utils/supabase';
+import { isSupabaseConfigured, getSupabaseClient, invokeEdgeFunction } from '../utils/supabase';
 
 export type ScreenName =
   | 'splash'
@@ -279,14 +279,43 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     };
   }, [restaurant.newOrderSound]);
 
-  const syncOrderToSupabase = async (orderId: string, status: OrderStatus) => {
+  const syncOrderToSupabase = async (orderId: string, status: OrderStatus, pickupCode?: string, reason?: string) => {
     try {
       const client = getSupabaseClient();
-      if (client) {
-        await client.from('orders').update({ status }).eq('id', orderId);
+      if (!client) return;
+
+      const statusMap: Record<string, string> = {
+        PLACED: 'PLACED',
+        PAYMENT_CONFIRMED: 'PLACED',
+        RESTAURANT_ACCEPTED: 'ACCEPTED',
+        PREPARING: 'PREPARING',
+        READY_FOR_PICKUP: 'READY',
+        RIDER_ASSIGNED: 'READY',
+        RIDER_ARRIVED: 'READY',
+        PICKUP_VERIFIED: 'READY',
+        PICKED_UP: 'PICKED_UP',
+        OUT_FOR_DELIVERY: 'PICKED_UP',
+        DELIVERED: 'DELIVERED',
+        RESTAURANT_REJECTED: 'REJECTED',
+        CUSTOMER_CANCELLED: 'CANCELLED',
+      };
+
+      const dbStatus = statusMap[status];
+      if (dbStatus) {
+        // Attempt edge function call with tenant isolation & role verification
+        await invokeEdgeFunction('update-order-status', {
+          order_id: orderId,
+          restaurant_id: restaurant.id || 'a0000000-0000-0000-0000-000000000001',
+          next_status: dbStatus,
+          pickup_code: pickupCode,
+          reason,
+        });
+
+        // Direct table update fallback/sync
+        await client.from('orders').update({ status: dbStatus }).eq('id', orderId);
       }
     } catch (err) {
-      console.warn('Supabase sync note:', err);
+      console.warn('Supabase order sync note:', err);
     }
   };
 
@@ -302,9 +331,32 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     setDocuments(prev => prev.map(doc => doc.id === id ? { ...doc, ...updates } : doc));
   };
 
-  const submitDocumentsForVerification = () => {
+  const submitDocumentsForVerification = async () => {
     setDocuments(prev => prev.map(doc => ({ ...doc, status: 'UNDER_REVIEW' })));
     setRestaurant(prev => ({ ...prev, regStatus: 'UNDER_REVIEW' }));
+
+    // If Supabase live, submit KYC and Bank Account via Edge Functions
+    if (isSupabaseConfigured()) {
+      try {
+        await invokeEdgeFunction('submit-kyc', {
+          restaurant_id: restaurant.id || 'a0000000-0000-0000-0000-000000000001',
+          pan_number: restaurant.panNumber,
+          gst_number: restaurant.gstNumber,
+          fssai_number: restaurant.fssaiNumber,
+        });
+
+        await invokeEdgeFunction('update-bank-account', {
+          restaurant_id: restaurant.id || 'a0000000-0000-0000-0000-000000000001',
+          account_holder_name: restaurant.ownerName,
+          bank_name: restaurant.bankName,
+          account_number: restaurant.bankAccount,
+          ifsc_code: restaurant.ifscCode,
+        });
+      } catch (err) {
+        console.warn('KYC Edge submission note:', err);
+      }
+    }
+
     showToast('Documents submitted for FEEDO verification', 'success');
     setCurrentScreen('verification_status');
   };
@@ -328,7 +380,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     setCurrentScreen('dashboard');
   };
 
-  const toggleOnlineStatus = () => {
+  const toggleOnlineStatus = async () => {
     if (!['OWNER', 'MANAGER'].includes(currentUserRole)) {
       showToast('Permission denied: Only Owner or Manager can change kitchen online status', 'error');
       return;
@@ -345,6 +397,13 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       setRestaurant(prev => ({ ...prev, isOnline: true }));
       showToast('Kitchen is now ONLINE and actively accepting orders', 'success');
       if (restaurant.newOrderSound) soundEffects.playAcceptTone();
+
+      if (isSupabaseConfigured()) {
+        await invokeEdgeFunction('update-restaurant', {
+          restaurant_id: restaurant.id || 'a0000000-0000-0000-0000-000000000001',
+          is_online: true,
+        });
+      }
     }
   };
 

@@ -73,10 +73,10 @@ serve(async (req: Request) => {
       );
     }
 
-    // If verifying pickup, validate code
+    // If verifying pickup, validate code strictly
     if (next_status === 'PICKED_UP') {
-      if (pickup_code && pickup_code !== currentOrder.pickup_code) {
-        return createErrorResponse('Invalid pickup code entered', 400);
+      if (!pickup_code || String(pickup_code).trim() !== String(currentOrder.pickup_code).trim()) {
+        return createErrorResponse('Invalid or missing 4-digit pickup code entered for handover', 400);
       }
     }
 

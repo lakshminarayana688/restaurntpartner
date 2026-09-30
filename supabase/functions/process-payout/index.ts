@@ -1,7 +1,7 @@
 // supabase/functions/process-payout/index.ts
 import { serve } from 'https://deno.land/std@0.177.0/http/server.ts';
 import { handleCors } from '../_shared/cors.ts';
-import { createErrorResponse, createSuccessResponse } from '../_shared/auth.ts';
+import { authenticateAndAuthorize, createErrorResponse, createSuccessResponse } from '../_shared/auth.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
 serve(async (req: Request) => {
@@ -12,25 +12,53 @@ serve(async (req: Request) => {
     return createErrorResponse('Method not allowed', 405);
   }
 
-  // Payout processing requires System Cron / Service Role authorization
-  const authHeader = req.headers.get('Authorization') || '';
-  const serviceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') || '';
   const supabaseUrl = Deno.env.get('SUPABASE_URL') || '';
-
-  if (!authHeader.includes(serviceKey)) {
-    return createErrorResponse('Unauthorized: Payout processing requires system service credentials', 401);
-  }
+  const serviceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') || '';
+  const authHeader = req.headers.get('Authorization') || '';
+  const isServiceRole = serviceKey && authHeader.includes(serviceKey);
 
   const adminClient = createClient(supabaseUrl, serviceKey);
 
   try {
     const body = await req.json();
-    const { payout_id, utr_reference, status = 'COMPLETED' } = body;
+    const { payout_id, utr_reference, status = 'COMPLETED', restaurant_id } = body;
 
     if (!payout_id || !utr_reference) {
       return createErrorResponse('Missing required fields (payout_id, utr_reference)', 422);
     }
 
+    // 1. Fetch current payout to verify restaurant and status
+    const { data: currentPayout, error: fetchErr } = await adminClient
+      .from('payouts')
+      .select('id, restaurant_id, status, net_amount, settlement_reference, utr_reference')
+      .eq('id', payout_id)
+      .single();
+
+    if (fetchErr || !currentPayout) {
+      return createErrorResponse('Payout record not found', 404);
+    }
+
+    // Idempotency: If already COMPLETED, return current state without duplicate processing
+    if (currentPayout.status === 'COMPLETED') {
+      return createSuccessResponse({
+        message: 'Payout has already been processed (idempotent)',
+        payout: currentPayout,
+      });
+    }
+
+    let actorUserId = 'system-settlement-service';
+
+    // If not using service role key, authenticate user as OWNER of the payout's restaurant
+    if (!isServiceRole) {
+      const authContext = await authenticateAndAuthorize(req, {
+        requiredRestaurantId: currentPayout.restaurant_id,
+        allowedRoles: ['OWNER'],
+      });
+      if (authContext instanceof Response) return authContext;
+      actorUserId = authContext.userId;
+    }
+
+    // 2. Update payout settlement status
     const { data: updatedPayout, error: updateErr } = await adminClient
       .from('payouts')
       .update({
@@ -46,13 +74,19 @@ serve(async (req: Request) => {
       return createErrorResponse('Failed to update payout settlement status', 500);
     }
 
-    // Audit Log
+    // 3. Audit Log
     await adminClient.from('audit_logs').insert({
+      user_id: actorUserId !== 'system-settlement-service' ? actorUserId : null,
       restaurant_id: updatedPayout.restaurant_id,
       action: 'PAYOUT_COMPLETED',
       resource_type: 'payouts',
       resource_id: payout_id,
-      metadata: { utr_reference, status, net_amount: updatedPayout.net_amount },
+      metadata: {
+        settlement_reference: currentPayout.settlement_reference,
+        utr_reference,
+        status,
+        net_amount: updatedPayout.net_amount,
+      },
     });
 
     return createSuccessResponse(updatedPayout);
