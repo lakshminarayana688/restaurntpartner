@@ -8,6 +8,8 @@ import {
   Monitor,
   Bike,
   ChevronDown,
+  Shield,
+  Activity,
 } from 'lucide-react';
 
 export const DemoToolbar: React.FC = () => {
@@ -19,18 +21,36 @@ export const DemoToolbar: React.FC = () => {
     viewMode,
     setViewMode,
     resetAllDemoData,
-    isPrototypeMode,
+    appMode,
+    setAppMode,
+    isDemoMode,
   } = useApp();
 
-  if (!isPrototypeMode) {
-    return null;
+  // The Demo Controller must only appear in DEMO MODE
+  if (!isDemoMode) {
+    return (
+      <div className="bg-slate-900 text-slate-300 text-xs px-3 py-1.5 border-b border-slate-800 flex items-center justify-between select-none">
+        <div className="flex items-center gap-2">
+          <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+          <span className="font-bold text-slate-100 flex items-center gap-1.5">
+            <Shield className="w-3.5 h-3.5 text-emerald-400" /> PRODUCTION MODE ACTIVE (Live Supabase & Edge Functions)
+          </span>
+        </div>
+        <button
+          onClick={() => setAppMode('DEMO')}
+          className="text-[11px] font-bold text-feedo-400 hover:text-feedo-300 bg-slate-800 hover:bg-slate-700 px-2 py-0.5 rounded border border-slate-700 transition-colors cursor-pointer"
+        >
+          Switch to Demo Mode
+        </button>
+      </div>
+    );
   }
 
   const screens: { id: ScreenName; label: string; group: string }[] = [
     // Pre-Auth / Onboarding
     { id: 'splash', label: '1. Splash Screen', group: 'Onboarding & Registration' },
     { id: 'onboarding', label: '2. Onboarding Slides', group: 'Onboarding & Registration' },
-    { id: 'login', label: '3. Mobile Login', group: 'Onboarding & Registration' },
+    { id: 'login', label: '3. Mobile Login (OTP: 123456)', group: 'Onboarding & Registration' },
     { id: 'otp', label: '4. OTP Verification', group: 'Onboarding & Registration' },
     { id: 'register', label: '5. Restaurant Registration', group: 'Onboarding & Registration' },
     { id: 'documents', label: '6. Document Uploads', group: 'Onboarding & Registration' },
@@ -59,9 +79,9 @@ export const DemoToolbar: React.FC = () => {
     <div className="bg-slate-950 text-white text-xs px-3 py-2 border-b border-slate-800 flex flex-wrap items-center justify-between gap-2 shadow-xl sticky top-0 z-50 select-none">
       {/* Brand & Screen Dropdown */}
       <div className="flex items-center gap-2">
-        <div className="flex items-center gap-1.5 bg-gradient-to-r from-feedo-500/30 to-amber-500/20 text-feedo-400 font-black px-2.5 py-1 rounded-lg border border-feedo-500/40">
-          <Sparkles className="w-3.5 h-3.5 text-feedo-400" />
-          <span>PROTOTYPE CONTROLLER</span>
+        <div className="flex items-center gap-1.5 bg-gradient-to-r from-amber-500/30 to-feedo-500/20 text-amber-400 font-black px-2.5 py-1 rounded-lg border border-amber-500/40">
+          <Sparkles className="w-3.5 h-3.5 text-amber-400" />
+          <span>DEMO MODE CONTROLLER</span>
         </div>
 
         {/* Screen Jump Selector */}
@@ -144,6 +164,15 @@ export const DemoToolbar: React.FC = () => {
             <span className="hidden sm:inline">Phone Frame</span>
           </button>
         </div>
+
+        {/* Mode Switcher */}
+        <button
+          onClick={() => setAppMode('PRODUCTION')}
+          title="Switch to Live Production Mode"
+          className="px-2.5 py-1 text-[11px] font-bold text-slate-300 hover:text-white bg-slate-900 hover:bg-slate-800 rounded-xl border border-slate-700 transition-colors cursor-pointer"
+        >
+          Go Live
+        </button>
 
         {/* Reset Demo Data */}
         <button

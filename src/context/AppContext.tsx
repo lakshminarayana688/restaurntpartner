@@ -1,7 +1,7 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import confetti from 'canvas-confetti';
 import { RestaurantDetails, VerificationDocument, RestaurantRegStatus } from '../types/restaurant';
-import { Order, OrderStatus, DeliveryPartner } from '../types/order';
+import { Order, OrderStatus, DeliveryPartner, PaymentStatus } from '../types/order';
 import { MenuItem } from '../types/menu';
 import { ReviewItem, OfferItem, SettlementRecord } from '../types/extras';
 import { initialDocuments, initialRestaurantDetails } from '../data/sampleData';
@@ -10,7 +10,23 @@ import { initialOrders } from '../data/initialOrders';
 import { initialReviews, initialOffers, initialSettlements } from '../data/initialExtras';
 import { soundEffects } from '../utils/audio';
 
-import { isSupabaseConfigured, getSupabaseClient, invokeEdgeFunction } from '../utils/supabase';
+import {
+  AppMode,
+  getAppMode,
+  setAppMode as persistAppMode,
+  isDemoMode as checkIsDemoMode,
+  authService,
+  restaurantService,
+  menuService,
+  orderService,
+  deliveryService,
+  paymentService,
+  settlementService,
+  notificationService,
+  analyticsService,
+  healthService,
+} from '../services';
+import { isSupabaseConfigured } from '../utils/supabase';
 
 export type ScreenName =
   | 'splash'
@@ -59,7 +75,13 @@ interface AppContextType {
   setScreen: (screen: ScreenName) => void;
   currentUserRole: UserRole;
   setCurrentUserRole: (role: UserRole) => void;
+  
+  // App Mode (DEMO vs PRODUCTION)
+  appMode: AppMode;
+  setAppMode: (mode: AppMode) => void;
+  isDemoMode: boolean;
   isPrototypeMode: boolean;
+  
   restaurant: RestaurantDetails;
   updateRestaurant: (details: Partial<RestaurantDetails>) => void;
   documents: VerificationDocument[];
@@ -99,6 +121,7 @@ interface AppContextType {
   setIsDownloadModalOpen: (open: boolean) => void;
   toggleOnlineStatus: () => void;
   isSupabaseLive: boolean;
+  isLoading: boolean;
   
   // Order Lifecycle
   simulateNewIncomingOrder: () => void;
@@ -127,15 +150,17 @@ interface AppContextType {
   
   // Reset
   resetAllDemoData: () => void;
+  refreshData: () => Promise<void>;
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
 
 export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const isPrototypeMode = (import.meta as any).env?.VITE_PROTOTYPE_MODE === 'true';
-  const [currentUserRole, setCurrentUserRole] = useState<UserRole>('OWNER');
+  const [appMode, setAppModeState] = useState<AppMode>(getAppMode());
+  const isDemo = appMode === 'DEMO';
+  const isPrototypeMode = isDemo;
   
-  // Screen state
+  const [currentUserRole, setCurrentUserRole] = useState<UserRole>('OWNER');
   const [currentScreen, setCurrentScreen] = useState<ScreenName>('dashboard');
   
   // Restaurant data
@@ -159,6 +184,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [isDatabaseModalOpen, setIsDatabaseModalOpen] = useState<boolean>(false);
   const [isDownloadModalOpen, setIsDownloadModalOpen] = useState<boolean>(false);
   const [isSupabaseLive, setIsSupabaseLive] = useState<boolean>(isSupabaseConfigured());
+  const [isLoading, setIsLoading] = useState<boolean>(false);
 
   const [notifications, setNotifications] = useState<AppNotification[]>([
     { id: 'notif-1', title: 'New Order Received', message: 'Order #FD10245 received from Rahul Kumar', time: '11:42 AM', type: 'ORDER', read: false },
@@ -167,7 +193,12 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   ]);
   const [toasts, setToasts] = useState<ToastMessage[]>([]);
 
-  // Sound and vibration helper
+  const setAppMode = (mode: AppMode) => {
+    setAppModeState(mode);
+    persistAppMode(mode);
+    showToast(`Switched to ${mode} MODE`, 'info');
+  };
+
   const showToast = (message: string, type: 'success' | 'error' | 'info' | 'warning' = 'info') => {
     const id = Date.now().toString() + Math.random().toString(36).substring(2, 5);
     setToasts(prev => [...prev, { id, message, type }]);
@@ -188,143 +219,129 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     setNotifications(prev => [newNotif, ...prev]);
   };
 
-  // --- SUPABASE REALTIME SUBSCRIPTION ---
+  // --- DATA REFRESH FUNCTION ---
+  const refreshData = useCallback(async () => {
+    if (isDemo) {
+      setOrders(initialOrders);
+      setMenuItems(initialMenuItems);
+      setSettlements(initialSettlements);
+      setRestaurant(initialRestaurantDetails);
+      return;
+    }
+
+    setIsLoading(true);
+    try {
+      const [restRes, ordersRes, menuRes, settRes] = await Promise.all([
+        restaurantService.getRestaurant(restaurant.id),
+        orderService.getOrders(restaurant.id),
+        menuService.getMenuItems(restaurant.id),
+        settlementService.getSettlements(restaurant.id),
+      ]);
+
+      if (restRes.success && restRes.data) setRestaurant(restRes.data);
+      if (ordersRes.success && ordersRes.data) setOrders(ordersRes.data);
+      if (menuRes.success && menuRes.data) setMenuItems(menuRes.data);
+      if (settRes.success && settRes.data) setSettlements(settRes.data);
+    } catch (err: any) {
+      showToast('Could not refresh data from server', 'error');
+    } finally {
+      setIsLoading(false);
+    }
+  }, [isDemo, restaurant.id]);
+
+  // Initial load
   useEffect(() => {
-    const client = getSupabaseClient();
-    if (!client) {
+    if (!isDemo && isSupabaseConfigured()) {
+      refreshData();
+    }
+  }, [isDemo, refreshData]);
+
+  // --- REALTIME SUBSCRIPTION VIA SERVICE LAYER ---
+  useEffect(() => {
+    if (isDemo || !isSupabaseConfigured()) {
       setIsSupabaseLive(false);
       return;
     }
 
     setIsSupabaseLive(true);
 
-    const channel = client
-      .channel('public:orders-live')
-      .on(
-        'postgres_changes',
-        { event: 'INSERT', schema: 'public', table: 'orders' },
-        (payload) => {
-          const row = payload.new as any;
-          if (!row) return;
-
-          const newOrder: Order = {
-            id: row.id,
-            customer: {
-              name: row.customer_name || 'Customer',
-              phoneMasked: row.customer_phone_masked || '+91 98*** **123',
-              address: row.customer_address || 'Bengaluru',
-              area: 'Nearby',
-              distanceKm: 2.4,
-              orderCount: 1,
+    const unsubscribe = orderService.subscribeToOrders(
+      restaurant.id || '',
+      (newOrderRow) => {
+        const newOrder: Order = {
+          id: newOrderRow.id,
+          customer: {
+            name: newOrderRow.customer_name_snapshot || 'Customer',
+            phoneMasked: newOrderRow.customer_phone_masked || '+91 98*** **123',
+            address: newOrderRow.customer_address_snapshot || 'Bengaluru',
+            area: 'Nearby',
+            distanceKm: 2.4,
+            orderCount: 1,
+          },
+          items: [
+            {
+              id: 'supa-item-1',
+              name: 'Customer Selected Dish',
+              category: 'Main Course',
+              price: Number(newOrderRow.subtotal) || 280,
+              quantity: 1,
+              isVeg: true,
             },
-            items: [
-              {
-                id: 'supa-item-1',
-                name: 'Customer Selected Order',
-                category: 'Main Course',
-                price: Number(row.subtotal) || 280,
-                quantity: 1,
-                isVeg: true,
-              },
-            ],
-            subtotal: Number(row.subtotal) || 280,
-            deliveryFee: Number(row.delivery_fee) || 40,
-            platformFee: Number(row.platform_fee) || 10,
-            taxes: Number(row.taxes) || 18,
-            discount: Number(row.discount) || 0,
-            total: Number(row.total) || 348,
-            paymentStatus: (row.payment_status || 'PAID') as any,
-            paymentMethod: row.payment_method || 'UPI',
-            status: (row.status || 'PAYMENT_CONFIRMED') as any,
-            specialInstructions: row.special_instructions || '',
-            pickupCode: row.pickup_code || Math.floor(1000 + Math.random() * 9000).toString(),
-            createdAt: 'Just now',
-            prepMinutes: row.prep_minutes || 18,
-            prepTargetMinutes: 20,
-            packagingDone: false,
-            timeline: [
-              { status: 'CREATED', title: 'Order Placed', description: 'Customer created order in database', time: 'Just now', completed: true },
-              { status: 'PAYMENT_CONFIRMED', title: 'Payment Confirmed', description: 'Online payment captured', time: 'Just now', completed: true },
-            ],
-          };
+          ],
+          subtotal: Number(newOrderRow.subtotal) || 280,
+          deliveryFee: Number(newOrderRow.delivery_fee) || 40,
+          platformFee: Number(newOrderRow.platform_fee) || 10,
+          taxes: Number(newOrderRow.tax) || 18,
+          discount: Number(newOrderRow.discount) || 0,
+          total: Number(newOrderRow.total_amount) || 348,
+          paymentStatus: (newOrderRow.payment_status || 'PAID') as PaymentStatus,
+          paymentMethod: newOrderRow.payment_method || 'UPI',
+          status: (newOrderRow.status || 'CREATED') as OrderStatus,
+          specialInstructions: newOrderRow.special_instructions || '',
+          pickupCode: newOrderRow.pickup_code || Math.floor(1000 + Math.random() * 9000).toString(),
+          createdAt: 'Just now',
+          prepMinutes: newOrderRow.prep_minutes || 18,
+          prepTargetMinutes: 20,
+          packagingDone: false,
+          timeline: [
+            { status: 'CREATED', title: 'Order Placed', description: 'Customer created order in database', time: 'Just now', completed: true },
+          ],
+        };
 
-          setOrders(prev => {
-            if (prev.some(o => o.id === newOrder.id)) return prev;
-            return [newOrder, ...prev];
-          });
-
-          setIncomingOrder(newOrder);
-          if (restaurant.newOrderSound) {
-            soundEffects.playNewOrderChime();
-          }
-          addNotification('New Order Received via Supabase', `Order #${newOrder.id} from ${newOrder.customer.name}`, 'ORDER');
-          showToast(`⚡ Real-time Order #${newOrder.id} received from Supabase!`, 'success');
-        }
-      )
-      .on(
-        'postgres_changes',
-        { event: 'UPDATE', schema: 'public', table: 'orders' },
-        (payload) => {
-          const row = payload.new as any;
-          if (!row) return;
-          setOrders(prev =>
-            prev.map(o => (o.id === row.id ? { ...o, status: row.status as any } : o))
-          );
-        }
-      )
-      .subscribe();
-
-    return () => {
-      client.removeChannel(channel);
-    };
-  }, [restaurant.newOrderSound]);
-
-  const syncOrderToSupabase = async (orderId: string, status: OrderStatus, pickupCode?: string, reason?: string) => {
-    try {
-      const client = getSupabaseClient();
-      if (!client) return;
-
-      const statusMap: Record<string, string> = {
-        PLACED: 'PLACED',
-        PAYMENT_CONFIRMED: 'PLACED',
-        RESTAURANT_ACCEPTED: 'ACCEPTED',
-        PREPARING: 'PREPARING',
-        READY_FOR_PICKUP: 'READY',
-        RIDER_ASSIGNED: 'READY',
-        RIDER_ARRIVED: 'READY',
-        PICKUP_VERIFIED: 'READY',
-        PICKED_UP: 'PICKED_UP',
-        OUT_FOR_DELIVERY: 'PICKED_UP',
-        DELIVERED: 'DELIVERED',
-        RESTAURANT_REJECTED: 'REJECTED',
-        CUSTOMER_CANCELLED: 'CANCELLED',
-      };
-
-      const dbStatus = statusMap[status];
-      if (dbStatus) {
-        // Attempt edge function call with tenant isolation & role verification
-        await invokeEdgeFunction('update-order-status', {
-          order_id: orderId,
-          restaurant_id: restaurant.id || 'a0000000-0000-0000-0000-000000000001',
-          next_status: dbStatus,
-          pickup_code: pickupCode,
-          reason,
+        setOrders(prev => {
+          if (prev.some(o => o.id === newOrder.id)) return prev;
+          return [newOrder, ...prev];
         });
 
-        // Direct table update fallback/sync
-        await client.from('orders').update({ status: dbStatus }).eq('id', orderId);
+        setIncomingOrder(newOrder);
+        if (restaurant.newOrderSound) {
+          soundEffects.playNewOrderChime();
+        }
+        addNotification('New Order Received via Supabase', `Order #${newOrder.id} from ${newOrder.customer.name}`, 'ORDER');
+        showToast(`⚡ Real-time Order #${newOrder.id} received from Supabase!`, 'success');
+      },
+      (updatedRow) => {
+        setOrders(prev =>
+          prev.map(o => (o.id === updatedRow.id ? { ...o, status: updatedRow.status as OrderStatus } : o))
+        );
       }
-    } catch (err) {
-      console.warn('Supabase order sync note:', err);
-    }
-  };
+    );
+
+    return () => {
+      unsubscribe();
+    };
+  }, [isDemo, restaurant.id, restaurant.newOrderSound]);
 
   const markNotificationsAsRead = () => {
     setNotifications(prev => prev.map(n => ({ ...n, read: true })));
+    notificationService.markAllAsRead();
   };
 
-  const updateRestaurant = (details: Partial<RestaurantDetails>) => {
+  const updateRestaurant = async (details: Partial<RestaurantDetails>) => {
     setRestaurant(prev => ({ ...prev, ...details }));
+    if (!isDemo && restaurant.id) {
+      await restaurantService.updateRestaurant(restaurant.id, details as any);
+    }
   };
 
   const updateDocument = (id: string, updates: Partial<VerificationDocument>) => {
@@ -335,26 +352,21 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     setDocuments(prev => prev.map(doc => ({ ...doc, status: 'UNDER_REVIEW' })));
     setRestaurant(prev => ({ ...prev, regStatus: 'UNDER_REVIEW' }));
 
-    // If Supabase live, submit KYC and Bank Account via Edge Functions
-    if (isSupabaseConfigured()) {
-      try {
-        await invokeEdgeFunction('submit-kyc', {
-          restaurant_id: restaurant.id || 'a0000000-0000-0000-0000-000000000001',
-          pan_number: restaurant.panNumber,
-          gst_number: restaurant.gstNumber,
-          fssai_number: restaurant.fssaiNumber,
-        });
+    if (!isDemo && restaurant.id) {
+      await restaurantService.submitKyc({
+        restaurant_id: restaurant.id,
+        pan_number: restaurant.panNumber,
+        gst_number: restaurant.gstNumber,
+        fssai_number: restaurant.fssaiNumber,
+      });
 
-        await invokeEdgeFunction('update-bank-account', {
-          restaurant_id: restaurant.id || 'a0000000-0000-0000-0000-000000000001',
-          account_holder_name: restaurant.ownerName,
-          bank_name: restaurant.bankName,
-          account_number: restaurant.bankAccount,
-          ifsc_code: restaurant.ifscCode,
-        });
-      } catch (err) {
-        console.warn('KYC Edge submission note:', err);
-      }
+      await restaurantService.updateBankAccount({
+        restaurant_id: restaurant.id,
+        account_holder_name: restaurant.ownerName,
+        bank_name: restaurant.bankName,
+        account_number: restaurant.bankAccount,
+        ifsc_code: restaurant.ifscCode,
+      });
     }
 
     showToast('Documents submitted for FEEDO verification', 'success');
@@ -398,11 +410,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       showToast('Kitchen is now ONLINE and actively accepting orders', 'success');
       if (restaurant.newOrderSound) soundEffects.playAcceptTone();
 
-      if (isSupabaseConfigured()) {
-        await invokeEdgeFunction('update-restaurant', {
-          restaurant_id: restaurant.id || 'a0000000-0000-0000-0000-000000000001',
-          is_online: true,
-        });
+      if (!isDemo && restaurant.id) {
+        await restaurantService.updateRestaurant(restaurant.id, { is_online: true });
       }
     }
   };
@@ -457,7 +466,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       paymentMethod: 'UPI (Google Pay)',
       status: 'PAYMENT_CONFIRMED',
       specialInstructions: 'Less spicy, please pack extra spoons and napkins.',
-      pickupCode: Math.floor(1000 + Math.random() * 9000).toString(),
+      pickupCode: '7284',
       createdAt: 'Just now',
       prepMinutes: 18,
       prepTargetMinutes: 20,
@@ -475,7 +484,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     addNotification('New Order Received', `Order #${mockOrder.id} from ${mockOrder.customer.name}`, 'ORDER');
   };
 
-  const acceptOrder = (orderId: string) => {
+  const acceptOrder = async (orderId: string) => {
     let orderToAccept = incomingOrder && incomingOrder.id === orderId ? incomingOrder : orders.find(o => o.id === orderId);
     if (!orderToAccept) return;
 
@@ -497,19 +506,16 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       return [acceptedOrder, ...prev];
     });
 
-    if (incomingOrder?.id === orderId) {
-      setIncomingOrder(null);
-    }
-    if (selectedOrder?.id === orderId) {
-      setSelectedOrder(acceptedOrder);
-    }
+    if (incomingOrder?.id === orderId) setIncomingOrder(null);
+    if (selectedOrder?.id === orderId) setSelectedOrder(acceptedOrder);
 
     if (restaurant.newOrderSound) soundEffects.playAcceptTone();
     showToast(`Order #${orderId} accepted. Start preparing!`, 'success');
-    syncOrderToSupabase(orderId, 'RESTAURANT_ACCEPTED');
+
+    await orderService.updateOrderStatus(orderId, restaurant.id || '', 'ACCEPTED');
   };
 
-  const rejectOrder = (orderId: string, reason: string) => {
+  const rejectOrder = async (orderId: string, reason: string) => {
     const updated = orders.map(o => {
       if (o.id === orderId) {
         return {
@@ -526,20 +532,17 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     });
 
     setOrders(updated);
-    if (incomingOrder?.id === orderId) {
-      setIncomingOrder(null);
-    }
-    if (selectedOrder?.id === orderId) {
-      setSelectedOrder(null);
-    }
+    if (incomingOrder?.id === orderId) setIncomingOrder(null);
+    if (selectedOrder?.id === orderId) setSelectedOrder(null);
 
     soundEffects.playRejectTone();
     showToast(`Order #${orderId} rejected: ${reason}`, 'warning');
     addNotification('Order Rejected', `Order #${orderId} rejected (${reason})`, 'ALERT');
-    syncOrderToSupabase(orderId, 'RESTAURANT_REJECTED');
+
+    await orderService.updateOrderStatus(orderId, restaurant.id || '', 'REJECTED', undefined, reason);
   };
 
-  const startPreparingOrder = (orderId: string) => {
+  const startPreparingOrder = async (orderId: string) => {
     setOrders(prev => prev.map(o => {
       if (o.id === orderId) {
         const updated: Order = {
@@ -559,16 +562,20 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
     if (restaurant.newOrderSound) soundEffects.playAcceptTone();
     showToast(`Order #${orderId} is now PREPARING`, 'info');
-    syncOrderToSupabase(orderId, 'PREPARING');
 
-    // Auto simulate rider assignment after 4 seconds
-    setTimeout(() => {
-      assignRider(orderId);
-    }, 4000);
+    await orderService.updateOrderStatus(orderId, restaurant.id || '', 'PREPARING');
+
+    // Auto simulate rider assignment after 4 seconds in demo mode
+    if (isDemo) {
+      setTimeout(() => {
+        assignRider(orderId);
+      }, 4000);
+    }
   };
 
-  const assignRider = (orderId: string) => {
-    const rider: DeliveryPartner = {
+  const assignRider = async (orderId: string) => {
+    const riderRes = await deliveryService.assignRider(orderId);
+    const rider = riderRes.data || {
       id: 'rider-arun',
       name: 'Arun Kumar',
       phoneMasked: '+91 91*** **890',
@@ -585,10 +592,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         const updated: Order = {
           ...o,
           rider,
+          deliveryState: 'RIDER_ASSIGNED',
           riderAssignedAt: 'Just now',
           timeline: [
             ...o.timeline,
-            { status: 'RIDER_ASSIGNED', title: 'Delivery Partner Assigned', description: 'Arun Kumar assigned (1.2 km away)', time: 'Just now', completed: true }
+            { status: 'RIDER_ASSIGNED', title: 'Delivery Partner Assigned', description: `${rider.name} assigned (1.2 km away)`, time: 'Just now', completed: true }
           ]
         };
         if (selectedOrder?.id === orderId) setSelectedOrder(updated);
@@ -597,12 +605,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       return o;
     }));
 
-    addNotification('Delivery Partner Assigned', `Arun Kumar assigned to Order #${orderId}`, 'RIDER');
-    showToast(`Delivery partner Arun Kumar assigned for #${orderId}`, 'info');
-    syncOrderToSupabase(orderId, 'RIDER_ASSIGNED');
+    addNotification('Delivery Partner Assigned', `${rider.name} assigned to Order #${orderId}`, 'RIDER');
+    showToast(`Delivery partner ${rider.name} assigned for #${orderId}`, 'info');
   };
 
-  const markFoodReady = (orderId: string) => {
+  const markFoodReady = async (orderId: string) => {
     setOrders(prev => prev.map(o => {
       if (o.id === orderId) {
         const updated: Order = {
@@ -624,7 +631,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     if (restaurant.newOrderSound) soundEffects.playFoodReadyTone();
     showToast(`Order #${orderId} marked FOOD READY! Waiting for pickup.`, 'success');
     addNotification('Food Ready for Pickup', `Order #${orderId} is packed & ready`, 'ORDER');
-    syncOrderToSupabase(orderId, 'READY_FOR_PICKUP');
+
+    await orderService.updateOrderStatus(orderId, restaurant.id || '', 'READY_FOR_PICKUP');
   };
 
   const markRiderArrived = (orderId: string) => {
@@ -632,6 +640,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       if (o.id === orderId) {
         const updated: Order = {
           ...o,
+          deliveryState: 'RIDER_ARRIVED',
           status: o.status === 'READY_FOR_PICKUP' ? 'RIDER_ARRIVED' : o.status,
           riderArrivedAt: 'Just now',
           timeline: [
@@ -646,15 +655,16 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }));
 
     if (restaurant.newOrderSound) soundEffects.playRiderArrivedTone();
-    showToast(`Delivery partner Arun Kumar arrived for #${orderId}!`, 'info');
-    addNotification('Delivery Partner Arrived', `Arun Kumar is at the counter for #${orderId}`, 'RIDER');
+    showToast(`Delivery partner arrived for #${orderId}!`, 'info');
+    addNotification('Delivery Partner Arrived', `Delivery partner is at the counter for #${orderId}`, 'RIDER');
   };
 
   const verifyPickup = (orderId: string, enteredCode?: string): boolean => {
     const order = orders.find(o => o.id === orderId);
     if (!order) return false;
 
-    if (enteredCode && enteredCode !== order.pickupCode) {
+    const isValid = deliveryService.verifyPickupCode(order.pickupCode, enteredCode || order.pickupCode);
+    if (!isValid) {
       showToast('Incorrect Pickup OTP. Please check rider screen.', 'error');
       return false;
     }
@@ -663,6 +673,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       if (o.id === orderId) {
         const updated: Order = {
           ...o,
+          deliveryState: 'PICKUP_VERIFIED',
           status: 'PICKUP_VERIFIED',
           timeline: [
             ...o.timeline,
@@ -677,20 +688,21 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
     soundEffects.playSuccessHandoverTone();
     showToast(`Pickup OTP verified for Order #${orderId}! Ready for handover.`, 'success');
-    syncOrderToSupabase(orderId, 'PICKUP_VERIFIED');
     return true;
   };
 
-  const confirmHandover = (orderId: string) => {
+  const confirmHandover = async (orderId: string) => {
+    const order = orders.find(o => o.id === orderId);
     setOrders(prev => prev.map(o => {
       if (o.id === orderId) {
         const updated: Order = {
           ...o,
           status: 'PICKED_UP',
+          deliveryState: 'HANDOVER_COMPLETED',
           pickedUpAt: 'Just now',
           timeline: [
             ...o.timeline,
-            { status: 'PICKED_UP', title: 'Handover Completed', description: 'Order handed over to Arun Kumar', time: 'Just now', completed: true }
+            { status: 'PICKED_UP', title: 'Handover Completed', description: 'Order handed over to delivery partner', time: 'Just now', completed: true }
           ]
         };
         if (selectedOrder?.id === orderId) setSelectedOrder(updated);
@@ -706,7 +718,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     });
     soundEffects.playSuccessHandoverTone();
     showToast(`Order #${orderId} Handover Complete!`, 'success');
-    syncOrderToSupabase(orderId, 'PICKED_UP');
+
+    await orderService.updateOrderStatus(orderId, restaurant.id || '', 'PICKED_UP', order?.pickupCode);
   };
 
   const startOutForDelivery = (orderId: string) => {
@@ -728,10 +741,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }));
 
     showToast(`Order #${orderId} is now OUT FOR DELIVERY!`, 'info');
-    syncOrderToSupabase(orderId, 'OUT_FOR_DELIVERY');
   };
 
-  const markDelivered = (orderId: string) => {
+  const markDelivered = async (orderId: string) => {
     setOrders(prev => prev.map(o => {
       if (o.id === orderId) {
         const updated: Order = {
@@ -751,53 +763,52 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
     showToast(`Order #${orderId} delivered to customer!`, 'success');
     addNotification('Order Delivered', `Order #${orderId} successfully delivered`, 'ORDER');
-    syncOrderToSupabase(orderId, 'DELIVERED');
+
+    await orderService.updateOrderStatus(orderId, restaurant.id || '', 'DELIVERED');
   };
 
   // --- MENU ACTIONS ---
 
-  const addMenuItem = (item: Omit<MenuItem, 'id' | 'rating' | 'votes'>) => {
-    const newItem: MenuItem = {
-      ...item,
-      id: 'item-' + Date.now(),
-      rating: 5.0,
-      votes: 1,
-    };
-    setMenuItems(prev => [newItem, ...prev]);
-    showToast(`"${newItem.name}" added to menu successfully`, 'success');
+  const addMenuItem = async (item: Omit<MenuItem, 'id' | 'rating' | 'votes'>) => {
+    const res = await menuService.addMenuItem(restaurant.id || '', item);
+    if (res.success && res.data) {
+      setMenuItems(prev => [res.data!, ...prev]);
+      showToast(`"${res.data.name}" added to menu successfully`, 'success');
+    } else {
+      showToast(res.error?.message || 'Failed to add menu item', 'error');
+    }
   };
 
-  const updateMenuItem = (id: string, updates: Partial<MenuItem>) => {
+  const updateMenuItem = async (id: string, updates: Partial<MenuItem>) => {
     setMenuItems(prev => prev.map(item => item.id === id ? { ...item, ...updates } : item));
+    await menuService.updateMenuItem(id, updates);
     showToast('Menu item updated successfully', 'success');
   };
 
-  const deleteMenuItem = (id: string) => {
+  const deleteMenuItem = async (id: string) => {
     setMenuItems(prev => prev.filter(item => item.id !== id));
+    await menuService.deleteMenuItem(id);
     showToast('Menu item deleted', 'info');
   };
 
-  const toggleItemAvailability = (id: string) => {
-    setMenuItems(prev => prev.map(item => {
-      if (item.id === id) {
-        const nextState = !item.isAvailable;
-        showToast(`"${item.name}" is now ${nextState ? 'IN STOCK' : 'OUT OF STOCK'}`, nextState ? 'success' : 'warning');
-        return { ...item, isAvailable: nextState };
-      }
-      return item;
-    }));
+  const toggleItemAvailability = async (id: string) => {
+    const item = menuItems.find(i => i.id === id);
+    if (!item) return;
+    const nextState = !item.isAvailable;
+
+    setMenuItems(prev => prev.map(it => it.id === id ? { ...it, isAvailable: nextState } : it));
+    showToast(`"${item.name}" is now ${nextState ? 'IN STOCK' : 'OUT OF STOCK'}`, nextState ? 'success' : 'warning');
+    await menuService.updateMenuItem(id, { isAvailable: nextState });
   };
 
-  const duplicateMenuItem = (id: string) => {
+  const duplicateMenuItem = async (id: string) => {
     const item = menuItems.find(i => i.id === id);
     if (!item) return;
     const duplicated: MenuItem = {
       ...item,
-      id: 'item-' + Date.now(),
       name: `${item.name} (Copy)`,
     };
-    setMenuItems(prev => [duplicated, ...prev]);
-    showToast(`Duplicated "${item.name}"`, 'success');
+    await addMenuItem(duplicated);
   };
 
   // --- REVIEWS & OFFERS ---
@@ -862,6 +873,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         setScreen: setCurrentScreen,
         currentUserRole,
         setCurrentUserRole,
+        appMode,
+        setAppMode,
+        isDemoMode: isDemo,
         isPrototypeMode,
         restaurant,
         updateRestaurant,
@@ -897,6 +911,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         setIsDownloadModalOpen,
         toggleOnlineStatus,
         isSupabaseLive,
+        isLoading,
         simulateNewIncomingOrder,
         acceptOrder,
         rejectOrder,
@@ -917,6 +932,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         createOffer,
         toggleOfferActive,
         resetAllDemoData,
+        refreshData,
       }}
     >
       {children}

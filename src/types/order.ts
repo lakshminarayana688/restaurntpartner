@@ -1,15 +1,47 @@
-export type OrderStatus =
+/**
+ * FEEDO Order Lifecycle States
+ */
+export type CoreOrderStatus =
   | 'CREATED'
-  | 'PAYMENT_CONFIRMED'
-  | 'RESTAURANT_ACCEPTED'
+  | 'ACCEPTED'
   | 'PREPARING'
   | 'READY_FOR_PICKUP'
-  | 'RIDER_ASSIGNED'
-  | 'RIDER_ARRIVED'
-  | 'PICKUP_VERIFIED'
   | 'PICKED_UP'
   | 'OUT_FOR_DELIVERY'
   | 'DELIVERED'
+  | 'REJECTED'
+  | 'CANCELLED';
+
+/**
+ * Delivery Handover Sub-States & Events
+ */
+export type DeliverySubState =
+  | 'UNASSIGNED'
+  | 'RIDER_ASSIGNED'
+  | 'RIDER_ARRIVED'
+  | 'PICKUP_VERIFIED'
+  | 'HANDOVER_COMPLETED';
+
+/**
+ * Authoritative Backend Payment Statuses (Separated from Order Lifecycle)
+ */
+export type PaymentStatus =
+  | 'PENDING'
+  | 'AUTHORIZED'
+  | 'PAID'
+  | 'FAILED'
+  | 'REFUNDED';
+
+/**
+ * Full UI OrderStatus (Maintains full backward compatibility with UI components & badge tags)
+ */
+export type OrderStatus =
+  | CoreOrderStatus
+  | 'PAYMENT_CONFIRMED'
+  | 'RESTAURANT_ACCEPTED'
+  | 'RIDER_ASSIGNED'
+  | 'RIDER_ARRIVED'
+  | 'PICKUP_VERIFIED'
   | 'RESTAURANT_REJECTED'
   | 'CUSTOMER_CANCELLED';
 
@@ -54,6 +86,7 @@ export interface OrderTimelineEvent {
   description: string;
   time: string;
   completed: boolean;
+  current?: boolean;
 }
 
 export interface Order {
@@ -66,9 +99,10 @@ export interface Order {
   taxes: number;
   discount: number;
   total: number;
-  paymentStatus: 'PAID' | 'COD' | 'PENDING';
+  paymentStatus: PaymentStatus | 'COD';
   paymentMethod: string;
   status: OrderStatus;
+  deliveryState?: DeliverySubState;
   specialInstructions?: string;
   rejectionReason?: string;
   pickupCode: string; // e.g. "7284"

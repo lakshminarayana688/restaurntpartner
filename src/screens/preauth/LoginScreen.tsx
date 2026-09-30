@@ -1,20 +1,28 @@
 import React, { useState } from 'react';
 import { useApp } from '../../context/AppContext';
+import { authService } from '../../services/authService';
 import { Phone, ArrowRight, ShieldCheck, Store, UtensilsCrossed } from 'lucide-react';
 
 export const LoginScreen: React.FC = () => {
-  const { setScreen, restaurant, updateRestaurant, showToast } = useApp();
+  const { setScreen, restaurant, updateRestaurant, showToast, isDemoMode } = useApp();
   const [mobileNumber, setMobileNumber] = useState('9876543210');
 
-  const handleContinue = (e: React.FormEvent) => {
+  const handleContinue = async (e: React.FormEvent) => {
     e.preventDefault();
     if (mobileNumber.length < 10) {
       showToast('Please enter a valid 10-digit mobile number', 'error');
       return;
     }
-    updateRestaurant({ ownerPhone: `+91 ${mobileNumber.slice(0, 5)} ${mobileNumber.slice(5)}` });
-    showToast('OTP sent successfully (Use demo code 123456)', 'info');
-    setScreen('otp');
+    const cleanPhone = `+91 ${mobileNumber.slice(0, 5)} ${mobileNumber.slice(5)}`;
+    updateRestaurant({ ownerPhone: cleanPhone });
+    
+    const res = await authService.sendOtp(cleanPhone);
+    if (res.success) {
+      showToast(res.data?.message || (isDemoMode ? 'OTP sent (Demo code: 123456)' : 'OTP sent to your phone'), 'info');
+      setScreen('otp');
+    } else {
+      showToast(res.error?.message || 'Failed to send OTP', 'error');
+    }
   };
 
   return (

@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { useApp } from '../../context/AppContext';
+import { authService } from '../../services/authService';
 import { ArrowLeft, CheckCircle2, ShieldCheck, KeyRound } from 'lucide-react';
 import { soundEffects } from '../../utils/audio';
 
 export const OtpScreen: React.FC = () => {
-  const { setScreen, restaurant, showToast } = useApp();
+  const { setScreen, restaurant, showToast, isDemoMode } = useApp();
   const [otp, setOtp] = useState(['1', '2', '3', '4', '5', '6']);
   const [timer, setTimer] = useState(28);
 
@@ -35,11 +36,19 @@ export const OtpScreen: React.FC = () => {
     }
   };
 
-  const handleVerify = (e: React.FormEvent) => {
+  const handleVerify = async (e: React.FormEvent) => {
     e.preventDefault();
     const entered = otp.join('');
     if (entered.length < 6) {
       showToast('Please enter complete 6-digit OTP', 'error');
+      return;
+    }
+
+    const phone = restaurant.ownerPhone || '+91 98765 43210';
+    const res = await authService.verifyOtp(phone, entered);
+
+    if (!res.success) {
+      showToast(res.error?.message || 'Invalid OTP code', 'error');
       return;
     }
 
