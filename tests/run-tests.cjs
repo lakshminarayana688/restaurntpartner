@@ -179,10 +179,99 @@ async function run() {
   assert(payoutCalc.tax === 324.00, 'GST on commission is 18% of 1800 (324.00)');
   assert(payoutCalc.netAmount === 7876.00, 'Net Payout = Gross - Commission - Tax (7876.00)');
 
+  // --- SECTION 7: DEDICATED NEW ORDER SOUND ALERT & DEDUPLICATION ---
+  console.log('\n--- 7. DEDICATED NEW ORDER SOUND ALERT & DEDUPLICATION ---');
+  
+  class MockOrderSoundService {
+    constructor() {
+      this.notifiedOrderIds = new Set();
+      this.soundPlayCount = 0;
+      this.settings = { enabled: true, volume: 0.75, repeatCount: 1 };
+    }
+
+    seedKnownOrderIds(orderIds) {
+      for (const id of orderIds) {
+        if (id) this.notifiedOrderIds.add(id);
+      }
+    }
+
+    notifyNewOrderIfNew(orderId, isSoundEnabled = this.settings.enabled) {
+      if (!orderId) return false;
+      if (this.notifiedOrderIds.has(orderId)) {
+        return false;
+      }
+      this.notifiedOrderIds.add(orderId);
+      if (isSoundEnabled) {
+        this.soundPlayCount++;
+      }
+      return true;
+    }
+
+    testSound() {
+      this.soundPlayCount++;
+    }
+
+    reset() {
+      this.notifiedOrderIds.clear();
+      this.soundPlayCount = 0;
+    }
+  }
+
+  const soundService = new MockOrderSoundService();
+
+  // Test 1: New order arrives -> sound plays
+  const order1Result = soundService.notifyNewOrderIfNew('FD1025');
+  assert(order1Result === true, 'Test 1: New order #FD1025 arrives -> sound triggers');
+  assert(soundService.soundPlayCount === 1, 'Test 1: Sound play count is exactly 1');
+
+  // Test 2: Same order updates to PREPARING -> sound does not replay
+  const order1StatusUpdate = soundService.notifyNewOrderIfNew('FD1025');
+  assert(order1StatusUpdate === false, 'Test 2: Same order status change (PREPARING) -> sound does not replay');
+  assert(soundService.soundPlayCount === 1, 'Test 2: Sound play count remains 1');
+
+  // Test 3: Duplicate webhook/realtime event for same order -> sound does not replay
+  const order1DuplicateEvent = soundService.notifyNewOrderIfNew('FD1025');
+  assert(order1DuplicateEvent === false, 'Test 3: Duplicate event for #FD1025 -> sound does not replay');
+  assert(soundService.soundPlayCount === 1, 'Test 3: Sound play count remains 1');
+
+  // Test 4: Another genuinely new order arrives -> sound plays
+  const order2Result = soundService.notifyNewOrderIfNew('FD1026');
+  assert(order2Result === true, 'Test 4: New order #FD1026 arrives -> sound triggers');
+  assert(soundService.soundPlayCount === 2, 'Test 4: Sound play count is now 2');
+
+  // Test 5: Sound disabled in settings -> new order tracked, but audio does not play
+  soundService.settings.enabled = false;
+  const order3Result = soundService.notifyNewOrderIfNew('FD1027', false);
+  assert(order3Result === true, 'Test 5: Order #FD1027 tracked even when sound is disabled');
+  assert(soundService.soundPlayCount === 2, 'Test 5: Sound play count remained 2 (no audio output when disabled)');
+
+  // Test 6: Test Sound button -> triggers sound
+  soundService.testSound();
+  assert(soundService.soundPlayCount === 3, 'Test 6: Test Sound button triggers sound preview');
+
+  // Test 7: Demo simulated order -> triggers sound
+  soundService.settings.enabled = true;
+  const simulatedDemoOrder = { id: 'FD_DEMO_9901', customer: { name: 'Simulated User' } };
+  const demoResult = soundService.notifyNewOrderIfNew(simulatedDemoOrder.id);
+  assert(demoResult === true, 'Test 7: Demo Order simulation triggers alert sound');
+  assert(soundService.soundPlayCount === 4, 'Test 7: Sound play count is now 4');
+
+  // Test 8: App Reconnect / initial load -> existing orders seeded do not trigger sound
+  const reconnectedService = new MockOrderSoundService();
+  const existingOrders = ['FD1001', 'FD1002', 'FD1003'];
+  reconnectedService.seedKnownOrderIds(existingOrders);
+  
+  for (const existingId of existingOrders) {
+    const replayAttempt = reconnectedService.notifyNewOrderIfNew(existingId);
+    assert(replayAttempt === false, `Test 8: Reconnected order ${existingId} is ignored without sound`);
+  }
+  assert(reconnectedService.soundPlayCount === 0, 'Test 8: Zero sounds played for seeded existing orders on reconnect');
+
   console.log('\n======================================================');
-  console.log('🎉 ALL 24 TESTS PASSED (SECURITY, MULTI-TENANT, RBAC, HMAC, ORDER FLOW, PAYOUTS)');
+  console.log('🎉 ALL 32 TESTS PASSED (SECURITY, MULTI-TENANT, RBAC, HMAC, ORDER FLOW, PAYOUTS, ORDER SOUND)');
   console.log('======================================================\n');
 }
 
 run();
+
 

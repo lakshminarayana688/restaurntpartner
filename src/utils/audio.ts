@@ -1,3 +1,5 @@
+import { orderSoundService } from '../services/orderSoundService';
+
 // Web Audio API Synthesizer for crystal-clear restaurant alerts without requiring external MP3 assets
 
 class SoundEffects {
@@ -17,33 +19,9 @@ class SoundEffects {
   }
 
   playNewOrderChime() {
-    const ctx = this.initCtx();
-    if (!ctx) return;
-
-    // Dual-tone urgent bell alert repeated twice
-    const playNote = (freq: number, start: number, duration: number, type: OscillatorType = 'sine') => {
-      const osc = ctx.createOscillator();
-      const gain = ctx.createGain();
-      osc.type = type;
-      osc.frequency.setValueAtTime(freq, start);
-      
-      gain.gain.setValueAtTime(0.35, start);
-      gain.gain.exponentialRampToValueAtTime(0.001, start + duration);
-
-      osc.connect(gain);
-      gain.connect(ctx.destination);
-
-      osc.start(start);
-      osc.stop(start + duration);
-    };
-
-    const now = ctx.currentTime;
-    // Ring sequence: Ding-Dong Ding-Dong
-    playNote(880, now + 0.0, 0.35, 'triangle'); // A5
-    playNote(1174.66, now + 0.15, 0.45, 'sine'); // D6
-    playNote(880, now + 0.6, 0.35, 'triangle');
-    playNote(1174.66, now + 0.75, 0.55, 'sine');
+    orderSoundService.playNewOrderAlert();
   }
+
 
   playAcceptTone() {
     const ctx = this.initCtx();

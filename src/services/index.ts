@@ -11,3 +11,5 @@ export * from './settlementService';
 export * from './notificationService';
 export * from './analyticsService';
 export * from './healthService';
+export * from './orderSoundService';
+

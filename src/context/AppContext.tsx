@@ -25,8 +25,11 @@ import {
   notificationService,
   analyticsService,
   healthService,
+  orderSoundService,
+  OrderSoundSettings,
 } from '../services';
 import { isSupabaseConfigured } from '../utils/supabase';
+
 
 export type ScreenName =
   | 'splash'
@@ -146,12 +149,19 @@ interface AppContextType {
   // Extra Actions
   addReviewReply: (reviewId: string, replyText: string) => void;
   createOffer: (offer: Omit<OfferItem, 'id' | 'totalRedemptions'>) => void;
-  toggleOfferActive: (offerId: string) => void;
-  
+  // Audio Alert Controls
+  orderSoundSettings: OrderSoundSettings;
+  updateOrderSoundSettings: (settings: Partial<OrderSoundSettings>) => void;
+  isAudioUnlocked: boolean;
+  unlockAudio: () => Promise<boolean>;
+  testOrderSound: () => void;
+  stopOrderSound: () => void;
+
   // Reset
   resetAllDemoData: () => void;
   refreshData: () => Promise<void>;
 }
+
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
 
@@ -193,6 +203,34 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   ]);
   const [toasts, setToasts] = useState<ToastMessage[]>([]);
 
+  // Sound Settings State
+  const [orderSoundSettings, setOrderSoundSettings] = useState<OrderSoundSettings>(orderSoundService.getSettings());
+  const [isAudioUnlocked, setIsAudioUnlocked] = useState<boolean>(orderSoundService.isAudioUnlocked());
+
+  const updateOrderSoundSettings = (updates: Partial<OrderSoundSettings>) => {
+    orderSoundService.saveSettings(updates);
+    setOrderSoundSettings(orderSoundService.getSettings());
+    if (updates.enabled !== undefined) {
+      updateRestaurant({ newOrderSound: updates.enabled });
+    }
+  };
+
+  const unlockAudio = async () => {
+    const success = await orderSoundService.unlockAudio();
+    setIsAudioUnlocked(success);
+    return success;
+  };
+
+  const testOrderSound = () => {
+    unlockAudio();
+    orderSoundService.testSound();
+    showToast('🔔 Playing test order alert chime', 'info');
+  };
+
+  const stopOrderSound = () => {
+    orderSoundService.stopAlert();
+  };
+
   const setAppMode = (mode: AppMode) => {
     setAppModeState(mode);
     persistAppMode(mode);
@@ -223,6 +261,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const refreshData = useCallback(async () => {
     if (isDemo) {
       setOrders(initialOrders);
+      orderSoundService.seedKnownOrderIds(initialOrders.map(o => o.id));
       setMenuItems(initialMenuItems);
       setSettlements(initialSettlements);
       setRestaurant(initialRestaurantDetails);
@@ -239,7 +278,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       ]);
 
       if (restRes.success && restRes.data) setRestaurant(restRes.data);
-      if (ordersRes.success && ordersRes.data) setOrders(ordersRes.data);
+      if (ordersRes.success && ordersRes.data) {
+        setOrders(ordersRes.data);
+        orderSoundService.seedKnownOrderIds(ordersRes.data.map(o => o.id));
+      }
       if (menuRes.success && menuRes.data) setMenuItems(menuRes.data);
       if (settRes.success && settRes.data) setSettlements(settRes.data);
     } catch (err: any) {
@@ -249,12 +291,14 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }
   }, [isDemo, restaurant.id]);
 
-  // Initial load
+  // Initial load & seed known order IDs
   useEffect(() => {
+    orderSoundService.seedKnownOrderIds(initialOrders.map(o => o.id));
     if (!isDemo && isSupabaseConfigured()) {
       refreshData();
     }
   }, [isDemo, refreshData]);
+
 
   // --- REALTIME SUBSCRIPTION VIA SERVICE LAYER ---
   useEffect(() => {
@@ -314,12 +358,12 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         });
 
         setIncomingOrder(newOrder);
-        if (restaurant.newOrderSound) {
-          soundEffects.playNewOrderChime();
-        }
+        // Alert sound triggers strictly for genuinely new orders and avoids duplicates/reconnects
+        orderSoundService.notifyNewOrderIfNew(newOrder.id, restaurant.newOrderSound);
         addNotification('New Order Received via Supabase', `Order #${newOrder.id} from ${newOrder.customer.name}`, 'ORDER');
         showToast(`⚡ Real-time Order #${newOrder.id} received from Supabase!`, 'success');
       },
+
       (updatedRow) => {
         setOrders(prev =>
           prev.map(o => (o.id === updatedRow.id ? { ...o, status: updatedRow.status as OrderStatus } : o))
@@ -478,13 +522,13 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     };
 
     setIncomingOrder(mockOrder);
-    if (restaurant.newOrderSound) {
-      soundEffects.playNewOrderChime();
-    }
+    // Distinct new-order alert sound with duplicate tracking
+    orderSoundService.notifyNewOrderIfNew(mockOrder.id, restaurant.newOrderSound);
     addNotification('New Order Received', `Order #${mockOrder.id} from ${mockOrder.customer.name}`, 'ORDER');
   };
 
   const acceptOrder = async (orderId: string) => {
+    orderSoundService.stopAlert();
     let orderToAccept = incomingOrder && incomingOrder.id === orderId ? incomingOrder : orders.find(o => o.id === orderId);
     if (!orderToAccept) return;
 
@@ -516,6 +560,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
 
   const rejectOrder = async (orderId: string, reason: string) => {
+    orderSoundService.stopAlert();
     const updated = orders.map(o => {
       if (o.id === orderId) {
         return {
@@ -533,6 +578,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
     setOrders(updated);
     if (incomingOrder?.id === orderId) setIncomingOrder(null);
+
     if (selectedOrder?.id === orderId) setSelectedOrder(null);
 
     soundEffects.playRejectTone();
@@ -927,13 +973,22 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         updateMenuItem,
         deleteMenuItem,
         toggleItemAvailability,
+
         duplicateMenuItem,
         addReviewReply,
         createOffer,
         toggleOfferActive,
+        orderSoundSettings,
+        updateOrderSoundSettings,
+        isAudioUnlocked,
+        unlockAudio,
+        testOrderSound,
+        stopOrderSound,
         resetAllDemoData,
         refreshData,
       }}
+
+
     >
       {children}
     </AppContext.Provider>

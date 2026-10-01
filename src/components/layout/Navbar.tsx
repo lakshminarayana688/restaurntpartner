@@ -14,6 +14,7 @@ export const Navbar: React.FC = () => {
     restaurant,
     toggleOnlineStatus,
     updateRestaurant,
+    updateOrderSoundSettings,
     notifications,
     setIsNotificationsOpen,
     setScreen,
@@ -50,7 +51,11 @@ export const Navbar: React.FC = () => {
           <div className="flex items-center gap-2 sm:gap-3 shrink-0">
             {/* Audio Alert Chime Toggle */}
             <button
-              onClick={() => updateRestaurant({ newOrderSound: !restaurant.newOrderSound })}
+              onClick={() => {
+                const next = !restaurant.newOrderSound;
+                updateRestaurant({ newOrderSound: next });
+                updateOrderSoundSettings({ enabled: next });
+              }}
               title={restaurant.newOrderSound ? 'Mute order notification chimes' : 'Enable order notification chimes'}
               className={`p-2 rounded-xl border transition-colors cursor-pointer ${
                 restaurant.newOrderSound
@@ -64,6 +69,7 @@ export const Navbar: React.FC = () => {
                 <VolumeX className="w-4 h-4" />
               )}
             </button>
+
 
             {/* Live Kitchen Status (ONLINE / OFFLINE) */}
             <button

@@ -4,10 +4,12 @@ import '../core/constants/order_status_constants.dart';
 import '../demo/demo_data.dart';
 import '../models/order_model.dart';
 import '../services/order_service.dart';
+import '../services/order_sound_service.dart';
 
 final orderServiceProvider = Provider<OrderService>((ref) {
   return OrderService();
 });
+
 
 class OrderState {
   final List<OrderModel> orders;
@@ -72,6 +74,7 @@ class OrderNotifier extends StateNotifier<OrderState> {
 
   OrderNotifier(this._orderService)
       : super(OrderState(orders: DemoData.initialOrders)) {
+    OrderSoundService().seedKnownOrderIds(DemoData.initialOrders.map((o) => o.id));
     loadOrders();
     _subscribeRealtime();
   }
@@ -79,6 +82,11 @@ class OrderNotifier extends StateNotifier<OrderState> {
   void _subscribeRealtime() {
     _subscription?.cancel();
     _subscription = _orderService.subscribeToOrders('rest_001').listen((updatedList) {
+      for (final order in updatedList) {
+        if (order.status == OrderStatusConstants.created || order.status == 'PLACED') {
+          OrderSoundService().notifyNewOrderIfNew(order.id);
+        }
+      }
       state = state.copyWith(orders: updatedList);
     });
   }
@@ -91,11 +99,13 @@ class OrderNotifier extends StateNotifier<OrderState> {
     state = state.copyWith(isLoading: true, error: null);
     final res = await _orderService.getOrders();
     if (res.success && res.data != null) {
+      OrderSoundService().seedKnownOrderIds(res.data!.map((o) => o.id));
       state = state.copyWith(orders: res.data, isLoading: false);
     } else {
       state = state.copyWith(isLoading: false, error: res.error?.message);
     }
   }
+
 
   Future<bool> acceptOrder(String orderId) async {
     return _transitionStatus(orderId, OrderStatusConstants.accepted);
@@ -211,8 +221,11 @@ class OrderNotifier extends StateNotifier<OrderState> {
       ],
     );
 
+    OrderSoundService().notifyNewOrderIfNew(simulatedOrder.id);
     _orderService.addDemoOrder(simulatedOrder);
+
   }
+
 
   void simulateRiderArrival() {
     final list = List<OrderModel>.from(state.orders);

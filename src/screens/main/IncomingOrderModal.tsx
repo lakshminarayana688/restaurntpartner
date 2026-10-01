@@ -11,10 +11,9 @@ import {
   FileText,
   Volume2,
 } from 'lucide-react';
-import { soundEffects } from '../../utils/audio';
 
 export const IncomingOrderModal: React.FC = () => {
-  const { incomingOrder, acceptOrder, rejectOrder } = useApp();
+  const { incomingOrder, acceptOrder, rejectOrder, stopOrderSound } = useApp();
   const [countdown, setCountdown] = useState(29);
   const [showRejectModal, setShowRejectModal] = useState(false);
   const [selectedReason, setSelectedReason] = useState('Restaurant Busy');
@@ -33,16 +32,11 @@ export const IncomingOrderModal: React.FC = () => {
       return;
     }
 
-    // Play periodic urgent chimes every 8s while open
-    const chimeTimer = setInterval(() => {
-      soundEffects.playNewOrderChime();
-    }, 8000);
-
     const timer = setInterval(() => {
       setCountdown((prev) => {
         if (prev <= 1) {
           clearInterval(timer);
-          clearInterval(chimeTimer);
+          stopOrderSound();
           return 0;
         }
         return prev - 1;
@@ -51,9 +45,10 @@ export const IncomingOrderModal: React.FC = () => {
 
     return () => {
       clearInterval(timer);
-      clearInterval(chimeTimer);
+      stopOrderSound();
     };
-  }, [incomingOrder]);
+  }, [incomingOrder, stopOrderSound]);
+
 
   if (!incomingOrder) return null;
 
