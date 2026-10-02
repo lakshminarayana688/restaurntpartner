@@ -37,3 +37,12 @@ dist-ssr
 /build/
 .metadata
 
+# Android Signing Keys & Keystore Secrets (Strictly Protected)
+*.keystore
+*.jks
+key.properties
+android/key.properties
+**/key.properties
+google-services.json
+android/app/google-services.json
+

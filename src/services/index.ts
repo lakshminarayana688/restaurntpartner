@@ -13,4 +13,6 @@ export * from './analyticsService';
 export * from './healthService';
 export * from './orderSoundService';
 export * from './pushNotificationService';
+export * from './loggerService';
+export * from './printerService';
 

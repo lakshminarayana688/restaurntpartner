@@ -13,6 +13,8 @@ import 'package:feedo_partner/services/settlement_service.dart';
 import 'package:feedo_partner/services/analytics_service.dart';
 import 'package:feedo_partner/services/notification_service.dart';
 import 'package:feedo_partner/services/push_notification_service.dart';
+import 'package:feedo_partner/services/logger_service.dart';
+import 'package:feedo_partner/services/printer_service.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -164,6 +166,86 @@ void main() {
 
       final logoutTokenRes = await pushService.removeTokenOnLogout();
       expect(logoutTokenRes.success, isTrue);
+    });
+
+    test('11. Safe Structured Logging & Masking in Flutter', () {
+      final logger = LoggerService();
+      logger.clear();
+
+      logger.info(
+        'ORDER_ACCEPTED',
+        userId: 'usr_001',
+        restaurantId: 'rest_001',
+        orderId: 'FD1025',
+        metadata: {
+          'password': 'secret_password_123',
+          'otp': '482910',
+          'bankAccount': '1234567890123456',
+          'pan': 'ABCDE1234F',
+          'phone': '+919876543210',
+          'email': 'lucky@feedopartner.com',
+        },
+      );
+
+      final logs = logger.recentLogs;
+      expect(logs.length, equals(1));
+      final entry = logs.first;
+      expect(entry.operation, equals('ORDER_ACCEPTED'));
+      expect(entry.metadata?['password'], equals('[REDACTED]'));
+      expect(entry.metadata?['otp'], equals('[REDACTED]'));
+      expect(entry.metadata?['bankAccount'], equals('****3456'));
+      expect(entry.metadata?['pan'], equals('ABCDE****F'));
+      expect(entry.metadata?['phone'], equals('+919****3210'));
+      expect(entry.metadata?['email'], equals('l***y@feedopartner.com'));
+    });
+
+    test('12. Optional Thermal Receipt Printing Support', () async {
+      final printer = PrinterService();
+      await printer.initialize();
+
+      final sampleOrder = OrderModel(
+        id: 'FD1025',
+        customer: CustomerInfo(
+          name: 'Customer John',
+          phoneMasked: '+91 98****3210',
+          address: '45 Lake View Road, Bangalore',
+        ),
+        subtotal: 500.0,
+        total: 540.0,
+        paymentStatus: 'PAID',
+        status: 'READY_FOR_PICKUP',
+        createdAt: DateTime.now().toIso8601String(),
+        items: [
+          OrderItem(id: 'it_1', name: 'Paneer Biryani', quantity: 2, price: 250.0),
+        ],
+      );
+
+      // Default: disabled -> does not block or fail
+      final printDisabled = await printer.printOrder(order: sampleOrder, restaurantName: 'Lucky Restaurant');
+      expect(printDisabled, isTrue);
+
+      // Connect printer
+      final connected = await printer.connect(PrinterDevice(id: 'bt_01', name: 'Thermal POS 58', type: PrinterConnectionType.bluetooth));
+      expect(connected, isTrue);
+      expect(printer.isConnected, isTrue);
+
+      // Customer Bill format
+      final billText = printer.formatReceipt(order: sampleOrder, restaurantName: 'Lucky Restaurant', type: ReceiptType.customerBill);
+      expect(billText.contains('FEEDO PARTNER'), isTrue);
+      expect(billText.contains('LUCKY RESTAURANT'), isTrue);
+      expect(billText.contains('Paneer Biryani'), isTrue);
+
+      // Kitchen Order Ticket (KOT) format
+      final kotText = printer.formatReceipt(order: sampleOrder, restaurantName: 'Lucky Restaurant', type: ReceiptType.kitchenOrderTicket);
+      expect(kotText.contains('KITCHEN ORDER TICKET (KOT)'), isTrue);
+
+      // Print order
+      final printResult = await printer.printOrder(order: sampleOrder, restaurantName: 'Lucky Restaurant');
+      expect(printResult, isTrue);
+
+      // Disconnect
+      await printer.disconnect();
+      expect(printer.isConnected, isFalse);
     });
   });
 }
