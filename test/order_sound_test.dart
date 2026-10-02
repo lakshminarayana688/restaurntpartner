@@ -1,5 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:feedo_partner/services/order_sound_service.dart';
+import 'package:feedo_partner/services/push_notification_service.dart';
 
 void main() {
   group('OrderSoundService Tests (Flutter)', () {
@@ -67,5 +68,62 @@ void main() {
       final dupHandled = service.handleFCMBackgroundMessage(payload);
       expect(dupHandled, isFalse);
     });
+
+    test('9. FCM PushMessage parses deep links and payload fields correctly', () {
+      final payload = {
+        'title': '🔔 New Order #FD10245',
+        'body': 'New order from Rahul • ₹470.00',
+        'data': {
+          'type': 'NEW_ORDER',
+          'order_id': 'FD10245',
+          'deep_link': 'feedopartner://order/FD10245',
+          'channel_id': 'feedo_order_alerts',
+        }
+      };
+
+      final msg = PushMessage.fromMap(payload);
+      expect(msg.title, equals('🔔 New Order #FD10245'));
+      expect(msg.orderId, equals('FD10245'));
+      expect(msg.deepLink, equals('feedopartner://order/FD10245'));
+      expect(msg.channelId, equals('feedo_order_alerts'));
+    });
+
+    test('10. PushNotificationService deep link routing parses orders and settlements', () {
+      final pushService = PushNotificationService();
+      String? routedScreen;
+      String? routedOrderId;
+
+      final orderPayload = {
+        'data': {
+          'type': 'NEW_ORDER',
+          'order_id': 'FD10245',
+          'deep_link': 'feedopartner://order/FD10245',
+        }
+      };
+
+      pushService.handleNotificationTap(orderPayload, onNavigate: (screen, orderId) {
+        routedScreen = screen;
+        routedOrderId = orderId;
+      });
+
+      expect(routedScreen, equals('orders'));
+      expect(routedOrderId, equals('FD10245'));
+
+      final settlementPayload = {
+        'data': {
+          'type': 'SETTLEMENT_PROCESSED',
+          'deep_link': 'feedopartner://settlements',
+        }
+      };
+
+      pushService.handleNotificationTap(settlementPayload, onNavigate: (screen, orderId) {
+        routedScreen = screen;
+        routedOrderId = orderId;
+      });
+
+      expect(routedScreen, equals('settlements'));
+      expect(routedOrderId, isNull);
+    });
   });
 }
+

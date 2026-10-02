@@ -159,6 +159,27 @@ CREATE OR REPLACE TRIGGER trg_validate_order_status
     BEFORE UPDATE OF status ON public.orders
     FOR EACH ROW EXECUTE FUNCTION public.validate_order_status_transition();
 
+-- Authoritative Payment Guard: Disallow regular authenticated users from altering payment_status
+CREATE OR REPLACE FUNCTION public.guard_order_payment_status_updates()
+RETURNS TRIGGER
+LANGUAGE plpgsql
+AS $$
+BEGIN
+    IF OLD.payment_status IS DISTINCT FROM NEW.payment_status THEN
+        -- Only Service Role or Database Functions can mutate payment status
+        IF auth.role() = 'authenticated' THEN
+            RAISE EXCEPTION 'Forbidden: Restaurant users cannot manually modify payment_status. Payment status is authoritatively managed by the payment gateway webhook.';
+        END IF;
+    END IF;
+
+    RETURN NEW;
+END;
+$$;
+
+CREATE OR REPLACE TRIGGER trg_guard_order_payment_status
+    BEFORE UPDATE OF payment_status ON public.orders
+    FOR EACH ROW EXECUTE FUNCTION public.guard_order_payment_status_updates();
+
 -- ============================================================================
 -- 2. ROW LEVEL SECURITY (RLS) ACTIVATION
 -- ============================================================================

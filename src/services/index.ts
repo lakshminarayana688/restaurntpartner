@@ -12,4 +12,5 @@ export * from './notificationService';
 export * from './analyticsService';
 export * from './healthService';
 export * from './orderSoundService';
+export * from './pushNotificationService';
 

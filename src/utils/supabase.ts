@@ -126,6 +126,7 @@ END $$;
 DO $$ BEGIN
     CREATE TYPE public.order_payment_status AS ENUM (
         'PENDING',
+        'AUTHORIZED',
         'PAID',
         'FAILED',
         'REFUNDED',
