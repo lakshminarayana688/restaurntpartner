@@ -15,6 +15,7 @@ import {
   Utensils,
   PackageCheck,
   KeyRound,
+  Volume2,
 } from 'lucide-react';
 
 type TabType = 'ALL' | 'NEW' | 'PREPARING' | 'READY' | 'PICKED_UP' | 'DELIVERED' | 'CANCELLED';
@@ -24,6 +25,7 @@ export const OrdersScreen: React.FC = () => {
     orders,
     setSelectedOrder,
     simulateNewIncomingOrder,
+    testOrderSound,
     startPreparingOrder,
     markFoodReady,
     markRiderArrived,
@@ -114,15 +116,26 @@ export const OrdersScreen: React.FC = () => {
           </p>
         </div>
 
-        {isPrototypeMode && (
+        <div className="flex items-center gap-2 self-start sm:self-auto flex-wrap">
           <button
-            onClick={simulateNewIncomingOrder}
-            className="py-2.5 px-4 bg-gradient-to-r from-amber-500 to-feedo-500 hover:from-amber-600 hover:to-feedo-600 text-white font-bold text-xs uppercase tracking-wider rounded-xl shadow-md shadow-feedo-500/20 flex items-center gap-2 self-start sm:self-auto cursor-pointer transition-all"
+            onClick={testOrderSound}
+            title="Test Order Assignment Notification Sound"
+            className="py-2.5 px-3.5 bg-amber-50 hover:bg-amber-100 text-amber-900 border border-amber-300 font-bold text-xs uppercase tracking-wider rounded-xl shadow-2xs flex items-center gap-1.5 cursor-pointer transition-all"
           >
-            <Zap className="w-4 h-4 fill-current" />
-            <span>+ Simulate Order</span>
+            <Volume2 className="w-4 h-4 text-amber-600" />
+            <span>Test Order Sound</span>
           </button>
-        )}
+
+          {isPrototypeMode && (
+            <button
+              onClick={simulateNewIncomingOrder}
+              className="py-2.5 px-4 bg-gradient-to-r from-amber-500 to-feedo-500 hover:from-amber-600 hover:to-feedo-600 text-white font-bold text-xs uppercase tracking-wider rounded-xl shadow-md shadow-feedo-500/20 flex items-center gap-2 cursor-pointer transition-all"
+            >
+              <Zap className="w-4 h-4 fill-current" />
+              <span>+ Simulate Order</span>
+            </button>
+          )}
+        </div>
       </div>
 
       {/* Tabs & Search Bar */}

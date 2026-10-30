@@ -95,6 +95,17 @@ export const initialOffers: OfferItem[] = [
 
 export const initialSettlements: SettlementRecord[] = [
   {
+    id: 'SET-9902',
+    date: 'Today',
+    period: 'Current Cycle (Live)',
+    grossAmount: 8940,
+    commission: 1609.2,
+    taxes: 289.65,
+    netPayout: 7041.15,
+    status: 'PROCESSING',
+    payoutRef: 'UTR-PENDING-CLEARANCE',
+  },
+  {
     id: 'SET-9901',
     date: '18 Sep 2026',
     period: '17 Sep - 18 Sep',

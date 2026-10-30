@@ -54,9 +54,21 @@ export type ScreenName =
   | 'notifications_center'
   | 'inventory'
   | 'support'
-  | 'settings';
+  | 'settings'
+  | 'admin';
 
-export type UserRole = 'OWNER' | 'MANAGER' | 'STAFF' | 'KITCHEN' | 'CASHIER';
+export type UserRole = 'OWNER' | 'MANAGER' | 'STAFF' | 'KITCHEN' | 'CASHIER' | 'ADMIN';
+
+export interface AuditLogEntry {
+  id: string;
+  timestamp: string;
+  action: string;
+  category: 'AUTH' | 'ORDER' | 'PAYMENT' | 'DISPATCH' | 'KYC' | 'ADMIN';
+  actor: string;
+  actorRole: UserRole;
+  details: string;
+  status: 'SUCCESS' | 'WARNING' | 'FAILED';
+}
 
 export interface AppNotification {
   id: string;
@@ -160,8 +172,80 @@ interface AppContextType {
   // Reset
   resetAllDemoData: () => void;
   refreshData: () => Promise<void>;
+
+  // Admin & Dispatch Platform Operations
+  auditLogs: AuditLogEntry[];
+  addAuditLog: (entry: Omit<AuditLogEntry, 'id' | 'timestamp'>) => void;
+  adminApproveRestaurant: () => void;
+  adminSuspendRestaurant: (suspend: boolean) => void;
+  adminUpdateCommissionRate: (rate: number) => void;
+  adminForceOrderStatus: (orderId: string, status: OrderStatus) => void;
+  adminReleaseSettlement: (settlementId: string) => void;
 }
 
+
+const initialAuditLogs: AuditLogEntry[] = [
+  {
+    id: 'audit-001',
+    timestamp: 'Today, 10:15 AM',
+    action: 'RESTAURANT_REGISTERED',
+    category: 'AUTH',
+    actor: 'Lakshmi Narayana',
+    actorRole: 'OWNER',
+    details: 'New merchant account registered with +91 98765 43210',
+    status: 'SUCCESS',
+  },
+  {
+    id: 'audit-002',
+    timestamp: 'Today, 10:24 AM',
+    action: 'KYC_DOCUMENTS_SUBMITTED',
+    category: 'KYC',
+    actor: 'Lakshmi Narayana',
+    actorRole: 'OWNER',
+    details: 'Uploaded 5 compliance documents: FSSAI, PAN, GST, Cheque, Photos',
+    status: 'SUCCESS',
+  },
+  {
+    id: 'audit-003',
+    timestamp: 'Today, 10:30 AM',
+    action: 'STORE_KYC_APPROVED',
+    category: 'ADMIN',
+    actor: 'FEEDO Ops Lead',
+    actorRole: 'ADMIN',
+    details: 'FSSAI License #21223004000891 verified against government portal',
+    status: 'SUCCESS',
+  },
+  {
+    id: 'audit-004',
+    timestamp: 'Today, 11:00 AM',
+    action: 'STORE_ONLINE',
+    category: 'ADMIN',
+    actor: 'Lakshmi Narayana',
+    actorRole: 'OWNER',
+    details: 'Kitchen status transitioned to ONLINE accepting orders',
+    status: 'SUCCESS',
+  },
+  {
+    id: 'audit-005',
+    timestamp: 'Today, 12:45 PM',
+    action: 'PAYMENT_WEBHOOK_VERIFIED',
+    category: 'PAYMENT',
+    actor: 'Razorpay Gateway',
+    actorRole: 'ADMIN',
+    details: 'HMAC-SHA256 signature verified for order #FD1024',
+    status: 'SUCCESS',
+  },
+  {
+    id: 'audit-006',
+    timestamp: 'Today, 01:10 PM',
+    action: 'RIDER_ASSIGNED',
+    category: 'DISPATCH',
+    actor: 'FEEDO Dispatch Engine',
+    actorRole: 'ADMIN',
+    details: 'Assigned rider Arun Kumar (+91 98765 88991) to order #FD1024',
+    status: 'SUCCESS',
+  },
+];
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
 
@@ -185,6 +269,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [reviews, setReviews] = useState<ReviewItem[]>(initialReviews);
   const [offers, setOffers] = useState<OfferItem[]>(initialOffers);
   const [settlements, setSettlements] = useState<SettlementRecord[]>(initialSettlements);
+  const [auditLogs, setAuditLogs] = useState<AuditLogEntry[]>(initialAuditLogs);
   
   // UI States
   const [viewMode, setViewMode] = useState<'responsive' | 'mobile_frame'>('responsive');
@@ -207,6 +292,16 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [orderSoundSettings, setOrderSoundSettings] = useState<OrderSoundSettings>(orderSoundService.getSettings());
   const [isAudioUnlocked, setIsAudioUnlocked] = useState<boolean>(orderSoundService.isAudioUnlocked());
 
+  // Keep isAudioUnlocked state synchronized in real-time across user interactions
+  useEffect(() => {
+    const unsubscribe = orderSoundService.addUnlockListener((unlocked) => {
+      setIsAudioUnlocked(unlocked);
+    });
+    return () => {
+      unsubscribe();
+    };
+  }, []);
+
   const updateOrderSoundSettings = (updates: Partial<OrderSoundSettings>) => {
     orderSoundService.saveSettings(updates);
     setOrderSoundSettings(orderSoundService.getSettings());
@@ -224,12 +319,12 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const testOrderSound = () => {
     unlockAudio();
     orderSoundService.testSound();
-    showToast('🔔 Playing test order alert chime', 'info');
+    showToast('🔔 Playing FEEDO order alert chime', 'info');
   };
 
-  const stopOrderSound = () => {
+  const stopOrderSound = useCallback(() => {
     orderSoundService.stopAlert();
-  };
+  }, []);
 
   const setAppMode = (mode: AppMode) => {
     setAppModeState(mode);
@@ -358,16 +453,70 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         });
 
         setIncomingOrder(newOrder);
-        // Alert sound triggers strictly for genuinely new orders and avoids duplicates/reconnects
-        orderSoundService.notifyNewOrderIfNew(newOrder.id, restaurant.newOrderSound);
-        addNotification('New Order Received via Supabase', `Order #${newOrder.id} from ${newOrder.customer.name}`, 'ORDER');
-        showToast(`⚡ Real-time Order #${newOrder.id} received from Supabase!`, 'success');
+        // Alert sound triggers when order is assigned to this restaurant
+        orderSoundService.playOrderAssignedSound(newOrder.id);
+        addNotification('Order Assigned to Restaurant', `Order #${newOrder.id} from ${newOrder.customer.name}`, 'ORDER');
+        showToast(`⚡ Order #${newOrder.id} assigned to your restaurant!`, 'success');
       },
 
       (updatedRow) => {
-        setOrders(prev =>
-          prev.map(o => (o.id === updatedRow.id ? { ...o, status: updatedRow.status as OrderStatus } : o))
-        );
+        if (updatedRow.restaurant_id && restaurant.id && updatedRow.restaurant_id !== restaurant.id) {
+          return;
+        }
+
+        setOrders(prev => {
+          const exists = prev.some(o => o.id === updatedRow.id);
+          // If order is newly assigned to this restaurant
+          if (!exists && ['CREATED', 'PLACED', 'PAYMENT_CONFIRMED', 'ASSIGNED'].includes(updatedRow.status)) {
+            const assignedOrder: Order = {
+              id: updatedRow.id,
+              customer: {
+                name: updatedRow.customer_name_snapshot || 'Customer',
+                phoneMasked: updatedRow.customer_phone_masked || '+91 98*** **123',
+                address: updatedRow.customer_address_snapshot || 'Bengaluru',
+                area: 'Nearby',
+                distanceKm: 2.4,
+                orderCount: 1,
+              },
+              items: [
+                {
+                  id: 'supa-item-assigned',
+                  name: 'Customer Selected Dish',
+                  category: 'Main Course',
+                  price: Number(updatedRow.subtotal) || 280,
+                  quantity: 1,
+                  isVeg: true,
+                },
+              ],
+              subtotal: Number(updatedRow.subtotal) || 280,
+              deliveryFee: Number(updatedRow.delivery_fee) || 40,
+              platformFee: Number(updatedRow.platform_fee) || 10,
+              taxes: Number(updatedRow.tax) || 18,
+              discount: Number(updatedRow.discount) || 0,
+              total: Number(updatedRow.total_amount) || 348,
+              paymentStatus: (updatedRow.payment_status || 'PAID') as PaymentStatus,
+              paymentMethod: updatedRow.payment_method || 'UPI',
+              status: (updatedRow.status || 'CREATED') as OrderStatus,
+              specialInstructions: updatedRow.special_instructions || '',
+              pickupCode: updatedRow.pickup_code || Math.floor(1000 + Math.random() * 9000).toString(),
+              createdAt: 'Just now',
+              prepMinutes: updatedRow.prep_minutes || 18,
+              prepTargetMinutes: 20,
+              packagingDone: false,
+              timeline: [
+                { status: 'CREATED', title: 'Order Assigned', description: 'Order assigned to restaurant in database', time: 'Just now', completed: true },
+              ],
+            };
+
+            setIncomingOrder(assignedOrder);
+            orderSoundService.playOrderAssignedSound(assignedOrder.id);
+            addNotification('Order Assigned to Restaurant', `Order #${assignedOrder.id} from ${assignedOrder.customer.name}`, 'ORDER');
+            showToast(`🔔 Order #${assignedOrder.id} assigned to your restaurant!`, 'success');
+            return [assignedOrder, ...prev];
+          }
+
+          return prev.map(o => (o.id === updatedRow.id ? { ...o, status: updatedRow.status as OrderStatus } : o));
+        });
       }
     );
 
@@ -437,8 +586,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
 
   const toggleOnlineStatus = async () => {
-    if (!['OWNER', 'MANAGER'].includes(currentUserRole)) {
-      showToast('Permission denied: Only Owner or Manager can change kitchen online status', 'error');
+    if (!['OWNER', 'MANAGER', 'ADMIN'].includes(currentUserRole)) {
+      showToast('Permission denied: Only Owner, Manager or Admin can change kitchen online status', 'error');
       return;
     }
 
@@ -521,10 +670,17 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       ],
     };
 
+    setOrders(prev => {
+      if (prev.some(o => o.id === mockOrder.id)) return prev;
+      return [mockOrder, ...prev];
+    });
+
     setIncomingOrder(mockOrder);
-    // Distinct new-order alert sound with duplicate tracking
-    orderSoundService.notifyNewOrderIfNew(mockOrder.id, restaurant.newOrderSound);
-    addNotification('New Order Received', `Order #${mockOrder.id} from ${mockOrder.customer.name}`, 'ORDER');
+    // Distinct order assigned alert sound with duplicate tracking & immediate audio unlock
+    orderSoundService.unlockAudio();
+    orderSoundService.playOrderAssignedSound(mockOrder.id);
+    addNotification('Order Assigned to Restaurant', `Order #${mockOrder.id} from ${mockOrder.customer.name}`, 'ORDER');
+    showToast(`🔔 Order #${mockOrder.id} assigned to your restaurant!`, 'success');
   };
 
   const acceptOrder = async (orderId: string) => {
@@ -896,6 +1052,124 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }));
   };
 
+  // --- ADMIN OPERATIONS ---
+
+  const addAuditLog = useCallback((entry: Omit<AuditLogEntry, 'id' | 'timestamp'>) => {
+    const newEntry: AuditLogEntry = {
+      ...entry,
+      id: `audit-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
+      timestamp: new Date().toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' }),
+    };
+    setAuditLogs((prev) => [newEntry, ...prev]);
+  }, []);
+
+  const adminApproveRestaurant = useCallback(() => {
+    setRestaurant((prev) => ({
+      ...prev,
+      regStatus: 'ACTIVE',
+      isOnline: true,
+      isSuspended: false,
+    }));
+    setDocuments((prev) =>
+      prev.map((doc) => ({
+        ...doc,
+        status: 'VERIFIED' as const,
+      }))
+    );
+    addAuditLog({
+      action: 'RESTAURANT_KYC_APPROVED',
+      category: 'ADMIN',
+      actor: 'FEEDO Super Admin',
+      actorRole: 'ADMIN',
+      details: 'All merchant compliance documents verified and store status activated.',
+      status: 'SUCCESS',
+    });
+    showToast('🛡️ Restaurant KYC & Store Approved by Super Admin!', 'success');
+  }, [addAuditLog, showToast]);
+
+  const adminSuspendRestaurant = useCallback((suspend: boolean) => {
+    setRestaurant((prev) => ({
+      ...prev,
+      isSuspended: suspend,
+      isOnline: suspend ? false : prev.isOnline,
+    }));
+    addAuditLog({
+      action: suspend ? 'RESTAURANT_SUSPENDED' : 'RESTAURANT_REACTIVATED',
+      category: 'ADMIN',
+      actor: 'FEEDO Operations Admin',
+      actorRole: 'ADMIN',
+      details: suspend ? 'Store suspended due to compliance review or maintenance.' : 'Store suspension lifted.',
+      status: suspend ? 'WARNING' : 'SUCCESS',
+    });
+    showToast(
+      suspend ? '⚠️ Restaurant has been SUSPENDED by Admin' : '✅ Restaurant reactivated by Admin',
+      suspend ? 'warning' : 'success'
+    );
+  }, [addAuditLog, showToast]);
+
+  const adminUpdateCommissionRate = useCallback((rate: number) => {
+    setRestaurant((prev) => ({ ...prev, commissionRate: rate }));
+    addAuditLog({
+      action: 'COMMISSION_RATE_UPDATED',
+      category: 'ADMIN',
+      actor: 'FEEDO Finance Admin',
+      actorRole: 'ADMIN',
+      details: `Platform commission rate adjusted to ${rate}%.`,
+      status: 'SUCCESS',
+    });
+    showToast(`Platform commission rate updated to ${rate}%`, 'info');
+  }, [addAuditLog, showToast]);
+
+  const adminForceOrderStatus = useCallback((orderId: string, status: OrderStatus) => {
+    setOrders((prev) =>
+      prev.map((o) => {
+        if (o.id === orderId) {
+          return {
+            ...o,
+            status,
+            deliveredAt: status === 'DELIVERED' ? new Date().toISOString() : o.deliveredAt,
+            pickedUpAt: status === 'PICKED_UP' ? new Date().toISOString() : o.pickedUpAt,
+            acceptedAt: status === 'ACCEPTED' || status === 'RESTAURANT_ACCEPTED' ? new Date().toISOString() : o.acceptedAt,
+          };
+        }
+        return o;
+      })
+    );
+    addAuditLog({
+      action: `ORDER_OVERRIDE_${status}`,
+      category: 'ORDER',
+      actor: 'FEEDO Dispatch Admin',
+      actorRole: 'ADMIN',
+      details: `Admin forcefully transitioned order #${orderId} to ${status}.`,
+      status: 'SUCCESS',
+    });
+    showToast(`Order #${orderId} status updated to ${status}`, 'success');
+  }, [addAuditLog, showToast]);
+
+  const adminReleaseSettlement = useCallback((settlementId: string) => {
+    setSettlements((prev) =>
+      prev.map((s) => {
+        if (s.id === settlementId) {
+          return {
+            ...s,
+            status: 'SETTLED' as const,
+            payoutRef: s.payoutRef.startsWith('UTR-') && !s.payoutRef.includes('PENDING') ? s.payoutRef : `UTR-INSTANT-${Date.now().toString().slice(-6)}`,
+          };
+        }
+        return s;
+      })
+    );
+    addAuditLog({
+      action: 'SETTLEMENT_RELEASED',
+      category: 'PAYMENT',
+      actor: 'FEEDO Payout Engine',
+      actorRole: 'ADMIN',
+      details: `Immediate settlement released for batch ${settlementId}.`,
+      status: 'SUCCESS',
+    });
+    showToast(`Settlement ${settlementId} released and marked SETTLED`, 'success');
+  }, [addAuditLog, showToast]);
+
   // --- RESET ALL DATA ---
 
   const resetAllDemoData = () => {
@@ -906,6 +1180,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     setReviews(initialReviews);
     setOffers(initialOffers);
     setSettlements(initialSettlements);
+    setAuditLogs(initialAuditLogs);
     setIncomingOrder(null);
     setSelectedOrder(null);
     setCurrentScreen('dashboard');
@@ -986,6 +1261,13 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         stopOrderSound,
         resetAllDemoData,
         refreshData,
+        auditLogs,
+        addAuditLog,
+        adminApproveRestaurant,
+        adminSuspendRestaurant,
+        adminUpdateCommissionRate,
+        adminForceOrderStatus,
+        adminReleaseSettlement,
       }}
 
 

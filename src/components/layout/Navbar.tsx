@@ -15,6 +15,7 @@ export const Navbar: React.FC = () => {
     toggleOnlineStatus,
     updateRestaurant,
     updateOrderSoundSettings,
+    testOrderSound,
     notifications,
     setIsNotificationsOpen,
     setScreen,
@@ -68,6 +69,16 @@ export const Navbar: React.FC = () => {
               ) : (
                 <VolumeX className="w-4 h-4" />
               )}
+            </button>
+
+            {/* Test Order Sound Button */}
+            <button
+              onClick={testOrderSound}
+              title="Test Order Assignment Notification Sound"
+              className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-amber-50 hover:bg-amber-100 text-amber-900 border border-amber-300 text-xs font-bold transition-all shadow-2xs cursor-pointer"
+            >
+              <Volume2 className="w-3.5 h-3.5 text-amber-600" />
+              <span className="hidden md:inline">Test Order Sound</span>
             </button>
 
 

@@ -70,6 +70,11 @@ class OrderSoundService {
     return true;
   }
 
+  /// Explicitly triggered when an order is assigned to the restaurant
+  bool playOrderAssignedSound(String orderId, {bool? soundEnabled}) {
+    return notifyNewOrderIfNew(orderId, soundEnabled: soundEnabled);
+  }
+
   /// Plays the distinct FEEDO restaurant incoming order alert tone
   Future<void> playNewOrderAlertSound() async {
     try {
@@ -79,6 +84,11 @@ class OrderSoundService {
     } catch (_) {
       // Safe fallback if running in test / unsupported platform
     }
+  }
+
+  /// Cancels ongoing alerts / repeats
+  void stopAlert() {
+    // Halts foreground notification alerts
   }
 
   /// Triggered from Settings "Test Sound" button

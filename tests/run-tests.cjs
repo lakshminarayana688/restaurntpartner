@@ -605,6 +605,14 @@ async function run() {
       return true;
     }
 
+    playOrderAssignedSound(orderId, isSoundEnabled = this.settings.enabled) {
+      return this.notifyNewOrderIfNew(orderId, isSoundEnabled);
+    }
+
+    stopAlert() {
+      // stops alert chime
+    }
+
     testSound() {
       this.soundPlayCount++;
     }
@@ -664,6 +672,30 @@ async function run() {
     assert(replayAttempt === false, `Test 8: Reconnected order ${existingId} is ignored without sound`);
   }
   assert(reconnectedService.soundPlayCount === 0, 'Test 8: Zero sounds played for seeded existing orders on reconnect');
+
+  // Test 9: Order assigned to restaurant -> triggers playOrderAssignedSound
+  const assignedService = new MockOrderSoundService();
+  const assignedResult = assignedService.playOrderAssignedSound('FD_ASSIGNED_881');
+  assert(assignedResult === true, 'Test 9: Order assigned to restaurant triggers alert sound');
+  assert(assignedService.soundPlayCount === 1, 'Test 9: Sound play count is 1 for newly assigned order');
+  assignedService.stopAlert();
+
+  // Test 10: Duplicate assignment event for same order does not replay sound
+  const dupAssignResult = assignedService.playOrderAssignedSound('FD_ASSIGNED_881');
+  assert(dupAssignResult === false, 'Test 10: Duplicate order assignment event is deduplicated without sound');
+  assert(assignedService.soundPlayCount === 1, 'Test 10: Sound play count remains 1');
+
+  // Test 11: Rider assigned event strictly does NOT trigger new-order alert sound
+  const riderAssignCountBefore = assignedService.soundPlayCount;
+  function handleRiderAssignmentEvent(event, soundSvc) {
+    if (event.type === 'RIDER_ASSIGNED') {
+      return false;
+    }
+    return soundSvc.playOrderAssignedSound(event.orderId);
+  }
+  const riderEventResult = handleRiderAssignmentEvent({ type: 'RIDER_ASSIGNED', orderId: 'FD_ASSIGNED_881' }, assignedService);
+  assert(riderEventResult === false, 'Test 11: Rider assignment event does NOT trigger new order sound');
+  assert(assignedService.soundPlayCount === riderAssignCountBefore, 'Test 11: Sound play count unchanged on rider assignment');
 
   // --- SECTION 9: PRODUCTION PUSH NOTIFICATIONS (FCM) & TOKEN LIFECYCLE ---
   console.log('\n--- 9. PRODUCTION PUSH NOTIFICATIONS (FCM) & TOKEN LIFECYCLE ---');

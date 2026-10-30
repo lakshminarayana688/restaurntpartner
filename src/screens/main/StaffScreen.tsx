@@ -109,8 +109,8 @@ export const StaffScreen: React.FC = () => {
   };
 
   const handleRemoveStaff = (id: string, name: string) => {
-    if (currentUserRole !== 'OWNER') {
-      showToast('Only Restaurant Owner can remove staff members', 'error');
+    if (currentUserRole !== 'OWNER' && currentUserRole !== 'ADMIN') {
+      showToast('Only Restaurant Owner or Admin can remove staff members', 'error');
       return;
     }
     setStaffList(staffList.filter((s) => s.id !== id));
@@ -118,8 +118,8 @@ export const StaffScreen: React.FC = () => {
   };
 
   const handleToggleStatus = (id: string) => {
-    if (currentUserRole !== 'OWNER') {
-      showToast('Only Restaurant Owner can suspend staff accounts', 'error');
+    if (currentUserRole !== 'OWNER' && currentUserRole !== 'ADMIN') {
+      showToast('Only Restaurant Owner or Admin can suspend staff accounts', 'error');
       return;
     }
     setStaffList(
@@ -138,6 +138,7 @@ export const StaffScreen: React.FC = () => {
     STAFF: 'bg-blue-100 text-blue-800 border-blue-200',
     KITCHEN: 'bg-orange-100 text-orange-800 border-orange-200',
     CASHIER: 'bg-emerald-100 text-emerald-800 border-emerald-200',
+    ADMIN: 'bg-rose-100 text-rose-800 border-rose-200',
   };
 
   return (

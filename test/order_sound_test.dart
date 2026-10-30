@@ -60,7 +60,14 @@ void main() {
       }
     });
 
-    test('8. FCM background payload parses and routes order notification', () {
+    test('8. Order assigned to restaurant triggers playOrderAssignedSound', () {
+      final assignResult = service.playOrderAssignedSound('FD1099');
+      expect(assignResult, isTrue);
+      expect(service.hasOrderBeenNotified('FD1099'), isTrue);
+      service.stopAlert();
+    });
+
+    test('9. FCM background payload parses and routes order notification', () {
       final payload = {'order_id': 'FD_FCM_99', 'type': 'NEW_ORDER'};
       final handled = service.handleFCMBackgroundMessage(payload);
       expect(handled, isTrue);

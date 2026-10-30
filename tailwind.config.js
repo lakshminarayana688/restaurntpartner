@@ -6,6 +6,13 @@ export default {
   ],
   theme: {
     extend: {
+      fontFamily: {
+        sans: ['Satoshi', 'Plus Jakarta Sans', 'sans-serif'],
+        heading: ['General Sans', 'sans-serif'],
+      },
+      transitionTimingFunction: {
+        DEFAULT: 'cubic-bezier(0.4, 0, 0.2, 1)',
+      },
       colors: {
         feedo: {
           50: '#fff7ed',

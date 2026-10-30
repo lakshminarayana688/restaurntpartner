@@ -102,6 +102,8 @@ export const initialRestaurantDetails: RestaurantDetails = {
   autoAcceptOrders: false,
   newOrderSound: true,
   regStatus: 'APPROVED', // Default approved so demo opens ready, but can be switched with Demo Controller!
+  commissionRate: 18,
+  isSuspended: false,
   openingHours: [
     { day: 'Monday', isOpen: true, openTime: '11:00 AM', closeTime: '11:00 PM' },
     { day: 'Tuesday', isOpen: true, openTime: '11:00 AM', closeTime: '11:00 PM' },

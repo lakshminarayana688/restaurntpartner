@@ -41,8 +41,9 @@ import { NotificationsScreen } from './screens/main/NotificationsScreen';
 import { InventoryScreen } from './screens/main/InventoryScreen';
 import { SupportScreen } from './screens/main/SupportScreen';
 import { SettingsScreen } from './screens/main/SettingsScreen';
+import { AdminScreen } from './screens/main/AdminScreen';
 
-import { Plus, Zap, Bike } from 'lucide-react';
+import { Plus, Zap, Bike, Volume2, VolumeX } from 'lucide-react';
 
 const MainAppContent: React.FC = () => {
   const {
@@ -55,6 +56,9 @@ const MainAppContent: React.FC = () => {
     isDownloadModalOpen,
     setIsDownloadModalOpen,
     isPrototypeMode,
+    isAudioUnlocked,
+    unlockAudio,
+    showToast,
   } = useApp();
 
   const isPreAuth = [
@@ -122,6 +126,8 @@ const MainAppContent: React.FC = () => {
         return <NotificationsScreen />;
       case 'support':
         return <SupportScreen />;
+      case 'admin':
+        return <AdminScreen />;
 
       default:
         return <DashboardScreen />;
@@ -131,16 +137,16 @@ const MainAppContent: React.FC = () => {
   const appView = isPreAuth ? (
     <div className="min-h-screen bg-slate-50">{renderCurrentScreen()}</div>
   ) : (
-    <div className="min-h-screen bg-slate-50 flex flex-col">
-      <Navbar />
-      <div className="flex-1 flex overflow-hidden">
-        <div className="hidden md:block">
-          <Sidebar />
-        </div>
-        <main className="flex-1 overflow-y-auto pb-24 md:pb-12 bg-slate-50/70">
-          {renderCurrentScreen()}
-        </main>
+    <div className="min-h-screen bg-slate-50 flex flex-col md:flex-row">
+      <div className="md:hidden">
+        <Navbar />
       </div>
+      <div className="hidden md:block shrink-0">
+        <Sidebar />
+      </div>
+      <main className="flex-1 min-w-0 overflow-y-auto pb-24 md:pb-12 bg-slate-50">
+        {renderCurrentScreen()}
+      </main>
       <MobileBottomNav />
 
       {/* Floating Action Button only in Prototype Mode */}
@@ -161,6 +167,30 @@ const MainAppContent: React.FC = () => {
   return (
     <div className="min-h-screen bg-slate-50 flex flex-col">
       <DemoToolbar />
+
+      {/* Audio Permission Alert Banner (if browser blocked autoplay) */}
+      {!isAudioUnlocked && (
+        <div className="bg-gradient-to-r from-amber-600 via-orange-600 to-feedo-600 text-white px-3 sm:px-4 py-2 text-xs flex items-center justify-between gap-2 shadow-xs sticky top-0 z-40">
+          <div className="flex items-center gap-2">
+            <VolumeX className="w-4 h-4 text-amber-200 animate-pulse shrink-0" />
+            <span className="text-[11px] sm:text-xs">
+              <strong>Order Sound Notice:</strong> Click anywhere on screen or tap here to enable loud audio alerts when orders are assigned to your restaurant.
+            </span>
+          </div>
+          <button
+            type="button"
+            onClick={async () => {
+              const ok = await unlockAudio();
+              if (ok) {
+                showToast('🔔 Order alert sound enabled!', 'success');
+              }
+            }}
+            className="px-3 py-1 bg-white text-slate-900 font-black rounded-lg hover:bg-amber-100 transition-colors shrink-0 text-[11px] shadow-xs cursor-pointer ml-2"
+          >
+            Enable Sound
+          </button>
+        </div>
+      )}
 
       {/* Modals & Slide-overs */}
       <ToastContainer />

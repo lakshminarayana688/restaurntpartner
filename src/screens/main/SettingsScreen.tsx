@@ -221,7 +221,7 @@ export const SettingsScreen: React.FC = () => {
               <div>
                 <h4 className="font-bold text-slate-800">Notification Sound Profile</h4>
                 <p className="text-[11px] text-slate-500">
-                  FEEDO Harmonic Chime (4-Tone Acoustic Bell — E5/G5/C6/E6)
+                  FEEDO Kitchen-Grade Multi-Tone Siren & Bell Chime (Twin-Chirp + Triad Bell Strike)
                 </p>
               </div>
               <div className="flex items-center gap-2">
@@ -231,7 +231,7 @@ export const SettingsScreen: React.FC = () => {
                   className="px-4 py-2 bg-gradient-to-r from-feedo-500 to-amber-500 hover:from-feedo-600 hover:to-amber-600 text-white font-bold rounded-xl shadow-xs flex items-center gap-1.5 cursor-pointer transition-all hover:scale-102 active:scale-98"
                 >
                   <Volume2 className="w-3.5 h-3.5" />
-                  <span>Test Sound</span>
+                  <span>Test Order Sound</span>
                 </button>
               </div>
             </div>

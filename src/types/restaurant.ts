@@ -67,4 +67,6 @@ export interface RestaurantDetails {
   newOrderSound: boolean;
   openingHours: OpeningHour[];
   regStatus: RestaurantRegStatus;
+  commissionRate?: number;
+  isSuspended?: boolean;
 }

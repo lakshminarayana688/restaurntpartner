@@ -10,12 +10,14 @@ import {
   CheckCircle2,
   FileText,
   Volume2,
+  VolumeX,
 } from 'lucide-react';
 
 export const IncomingOrderModal: React.FC = () => {
   const { incomingOrder, acceptOrder, rejectOrder, stopOrderSound } = useApp();
   const [countdown, setCountdown] = useState(29);
   const [showRejectModal, setShowRejectModal] = useState(false);
+  const [isMuted, setIsMuted] = useState(false);
   const [selectedReason, setSelectedReason] = useState('Restaurant Busy');
 
   const rejectReasons = [
@@ -81,13 +83,42 @@ export const IncomingOrderModal: React.FC = () => {
             </div>
           </div>
 
-          {/* Countdown Ring */}
-          <div className="flex flex-col items-center bg-black/30 backdrop-blur-md px-3 py-1.5 rounded-2xl border border-white/20">
-            <div className="flex items-center gap-1 text-amber-300">
-              <Clock className="w-3.5 h-3.5" />
-              <span className="text-base font-mono font-black">{countdown}s</span>
+          {/* Countdown & Sound Control */}
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={() => {
+                if (!isMuted) {
+                  stopOrderSound();
+                  setIsMuted(true);
+                } else {
+                  setIsMuted(false);
+                }
+              }}
+              title={isMuted ? 'Alert Sound Muted' : 'Silence Ringing Alert'}
+              className="p-2 rounded-xl bg-white/20 hover:bg-white/30 backdrop-blur-md border border-white/20 transition-all cursor-pointer flex items-center gap-1.5"
+            >
+              {isMuted ? (
+                <>
+                  <VolumeX className="w-4 h-4 text-white/80" />
+                  <span className="text-[10px] font-bold text-white/80 hidden sm:inline">Muted</span>
+                </>
+              ) : (
+                <>
+                  <Volume2 className="w-4 h-4 text-amber-200 animate-pulse" />
+                  <span className="text-[10px] font-bold text-amber-200 hidden sm:inline">Ringing</span>
+                </>
+              )}
+            </button>
+
+            {/* Countdown Ring */}
+            <div className="flex flex-col items-center bg-black/30 backdrop-blur-md px-3 py-1.5 rounded-2xl border border-white/20">
+              <div className="flex items-center gap-1 text-amber-300">
+                <Clock className="w-3.5 h-3.5" />
+                <span className="text-base font-mono font-black">{countdown}s</span>
+              </div>
+              <span className="text-[9px] text-white/80">Auto-reject</span>
             </div>
-            <span className="text-[9px] text-white/80">Auto-reject</span>
           </div>
         </div>
 

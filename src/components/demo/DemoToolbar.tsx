@@ -10,6 +10,7 @@ import {
   ChevronDown,
   Shield,
   Activity,
+  Volume2,
 } from 'lucide-react';
 
 export const DemoToolbar: React.FC = () => {
@@ -17,6 +18,7 @@ export const DemoToolbar: React.FC = () => {
     currentScreen,
     setScreen,
     simulateNewIncomingOrder,
+    testOrderSound,
     setIsRiderSimulatorOpen,
     viewMode,
     setViewMode,
@@ -73,6 +75,8 @@ export const DemoToolbar: React.FC = () => {
     { id: 'staff', label: '21. Staff & Operations', group: 'Business Tools' },
     { id: 'notifications_center', label: '22. Notifications Center', group: 'Business Tools' },
     { id: 'support', label: '23. FEEDO Support Hub', group: 'Business Tools' },
+    // Platform Administration
+    { id: 'admin', label: '24. FEEDO Platform Admin Console', group: 'Platform Administration' },
   ];
 
   return (
@@ -112,6 +116,13 @@ export const DemoToolbar: React.FC = () => {
                 </option>
               ))}
             </optgroup>
+            <optgroup label="Platform Administration">
+              {screens.filter((s) => s.group === 'Platform Administration').map((s) => (
+                <option key={s.id} value={s.id}>
+                  {s.label}
+                </option>
+              ))}
+            </optgroup>
           </select>
           <ChevronDown className="w-3.5 h-3.5 text-slate-400 absolute right-2.5 pointer-events-none" />
         </div>
@@ -126,6 +137,16 @@ export const DemoToolbar: React.FC = () => {
         >
           <Zap className="w-3.5 h-3.5 fill-current" />
           <span>+ Simulate Customer Order</span>
+        </button>
+
+        {/* Test Order Sound CTA */}
+        <button
+          onClick={testOrderSound}
+          title="Test Order Assignment Notification Sound"
+          className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-amber-300 hover:text-amber-200 border border-amber-500/40 font-bold text-xs shadow-xs transition-all cursor-pointer"
+        >
+          <Volume2 className="w-3.5 h-3.5 text-amber-400" />
+          <span>Test Order Sound</span>
         </button>
 
         {/* Rider Companion Modal Toggle */}
