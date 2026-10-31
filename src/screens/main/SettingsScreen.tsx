@@ -1,26 +1,13 @@
 import React from 'react';
 import { useApp } from '../../context/AppContext';
 import {
-  Settings,
   Volume2,
   VolumeX,
-  Zap,
-  Shield,
-  KeyRound,
   Store,
   LogOut,
-  Smartphone,
-  CheckCircle2,
   Bell,
   Lock,
-  Database,
-  Download,
-  Copy,
-  ExternalLink,
-  Radio,
-  Sparkles,
 } from 'lucide-react';
-import { SQL_SCHEMA_DDL } from '../../utils/supabase';
 
 export const SettingsScreen: React.FC = () => {
   const {
@@ -33,116 +20,28 @@ export const SettingsScreen: React.FC = () => {
     testOrderSound,
     setScreen,
     showToast,
-    isSupabaseLive,
-    setIsDatabaseModalOpen,
-    setIsDownloadModalOpen,
   } = useApp();
-
-
-  const handleCopySql = () => {
-    navigator.clipboard.writeText(SQL_SCHEMA_DDL);
-    showToast('PostgreSQL SQL Schema copied to clipboard!', 'success');
-  };
 
   return (
     <div className="p-4 sm:p-6 lg:p-8 max-w-4xl mx-auto space-y-8 animate-in fade-in">
       {/* Header */}
       <div className="border-b border-slate-100 pb-6">
         <h1 className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight">
-          Partner Settings & Integrations
+          Partner Settings
         </h1>
         <p className="text-xs text-slate-500 mt-0.5">
-          Configure cloud database synchronization, mobile app downloads, kitchen automation, and device security.
+          Manage your restaurant notifications, security, and account preferences.
         </p>
       </div>
 
       <div className="space-y-6">
-        {/* 1. CLOUD BACKEND & POSTGRESQL REALTIME DB */}
-        <div className="bg-white rounded-3xl p-6 border border-slate-200 shadow-2xs space-y-5">
-          <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-            <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2">
-              <Database className="w-4 h-4 text-emerald-600" />
-              <span>Cloud Backend & PostgreSQL Real-time DB (Supabase / Free Tier)</span>
-            </h3>
-            <span
-              className={`text-[10px] font-bold px-2.5 py-0.5 rounded-full ${
-                isSupabaseLive
-                  ? 'bg-emerald-100 text-emerald-800 border border-emerald-300'
-                  : 'bg-amber-100 text-amber-800 border border-amber-300'
-              }`}
-            >
-              {isSupabaseLive ? '🟢 Connected to Supabase' : '🟡 In-Memory Local Simulation'}
-            </span>
-          </div>
 
-          <div className="space-y-4 text-xs">
-            <p className="text-slate-600 leading-relaxed">
-              Connect a 100% free Supabase cloud database to enable multi-device sync, real-time customer order streaming, and automatic PostgreSQL order updates.
-            </p>
-
-            <div className="flex flex-wrap items-center gap-3">
-              <button
-                onClick={() => setIsDatabaseModalOpen(true)}
-                className="px-4 py-2.5 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white font-bold rounded-xl shadow-xs flex items-center gap-1.5 transition-all cursor-pointer"
-              >
-                <Database className="w-3.5 h-3.5" />
-                <span>{isSupabaseLive ? 'Manage Database Credentials' : 'Connect Free Supabase Database'}</span>
-              </button>
-
-              <button
-                onClick={handleCopySql}
-                className="px-4 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold rounded-xl flex items-center gap-1.5 transition-colors cursor-pointer"
-              >
-                <Copy className="w-3.5 h-3.5" />
-                <span>Copy SQL DDL Schema</span>
-              </button>
-
-              <a
-                href="https://supabase.com/"
-                target="_blank"
-                rel="noreferrer"
-                className="px-4 py-2.5 text-feedo-600 hover:text-feedo-700 hover:bg-feedo-50 font-bold rounded-xl flex items-center gap-1.5 transition-colors"
-              >
-                <span>Supabase Console</span>
-                <ExternalLink className="w-3.5 h-3.5" />
-              </a>
-            </div>
-          </div>
-        </div>
-
-        {/* 2. ANDROID MOBILE APP & APK */}
-        <div className="bg-white rounded-3xl p-6 border border-slate-200 shadow-2xs space-y-5">
-          <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-            <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2">
-              <Smartphone className="w-4 h-4 text-feedo-600" />
-              <span>Android Mobile App & Native APK Build</span>
-            </h3>
-            <span className="text-[10px] font-bold bg-feedo-100 text-feedo-800 px-2.5 py-0.5 rounded-full border border-feedo-200">
-              Android 8.0+ Ready
-            </span>
-          </div>
-
-          <div className="space-y-4 text-xs">
-            <p className="text-slate-600 leading-relaxed">
-              Install the FEEDO Restaurant Partner app as a standalone Progressive Web App or build a native Android <code>.apk</code> using Capacitor & GitHub Actions.
-            </p>
-
-            <button
-              onClick={() => setIsDownloadModalOpen(true)}
-              className="px-4 py-2.5 bg-slate-900 hover:bg-slate-800 text-white font-bold rounded-xl shadow-xs flex items-center gap-1.5 transition-all cursor-pointer"
-            >
-              <Download className="w-3.5 h-3.5 text-feedo-400" />
-              <span>Open APK & App Download Center</span>
-            </button>
-          </div>
-        </div>
-
-        {/* 3. ORDER NOTIFICATIONS & ALERT SOUND */}
+        {/* 1. ORDER NOTIFICATIONS & ALERT SOUND */}
         <div className="bg-white rounded-3xl p-6 border border-slate-200 shadow-2xs space-y-5">
           <div className="flex items-center justify-between border-b border-slate-100 pb-3">
             <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2">
               <Bell className="w-4 h-4 text-feedo-500" />
-              <span>Order Notifications & Alert Sound</span>
+              <span>Order Notifications &amp; Alert Sound</span>
             </h3>
             <span
               className={`text-[10px] font-bold px-2.5 py-0.5 rounded-full ${
@@ -221,7 +120,7 @@ export const SettingsScreen: React.FC = () => {
               <div>
                 <h4 className="font-bold text-slate-800">Notification Sound Profile</h4>
                 <p className="text-[11px] text-slate-500">
-                  FEEDO Kitchen-Grade Multi-Tone Siren & Bell Chime (Twin-Chirp + Triad Bell Strike)
+                  FEEDO Kitchen-Grade Multi-Tone Siren &amp; Bell Chime (Twin-Chirp + Triad Bell Strike)
                 </p>
               </div>
               <div className="flex items-center gap-2">
@@ -310,11 +209,11 @@ export const SettingsScreen: React.FC = () => {
         </div>
 
 
-        {/* 4. SECURITY & ACCESS PIN */}
+        {/* 2. SECURITY & ACCESS PIN */}
         <div className="bg-white rounded-3xl p-6 border border-slate-200 shadow-2xs space-y-4">
           <h3 className="text-sm font-bold text-slate-900 border-b border-slate-100 pb-3 flex items-center gap-2">
             <Lock className="w-4 h-4 text-feedo-500" />
-            <span>App Lock & Financial Security</span>
+            <span>App Lock &amp; Financial Security</span>
           </h3>
 
           <div className="space-y-3 text-xs">
@@ -340,7 +239,7 @@ export const SettingsScreen: React.FC = () => {
           </div>
         </div>
 
-        {/* 5. SWITCH ACCOUNT / LOGOUT */}
+        {/* 3. SWITCH ACCOUNT / LOGOUT */}
         <div className="bg-white rounded-3xl p-6 border border-slate-200 shadow-2xs space-y-4">
           <h3 className="text-sm font-bold text-slate-900 border-b border-slate-100 pb-3 flex items-center gap-2">
             <Store className="w-4 h-4 text-feedo-500" />

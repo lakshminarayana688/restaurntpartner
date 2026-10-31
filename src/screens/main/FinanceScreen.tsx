@@ -1,5 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { useApp } from '../../context/AppContext';
+import { SalesOverviewCard } from '../../components/dashboard/SalesOverviewCard';
 import {
   IndianRupee,
   TrendingUp,
@@ -9,9 +10,7 @@ import {
   Lock,
   Clock,
   Search,
-  Filter,
   ArrowUpRight,
-  ShieldCheck,
   Receipt,
   FileSpreadsheet,
 } from 'lucide-react';
@@ -121,6 +120,13 @@ export const FinanceScreen: React.FC = () => {
           </button>
         </div>
       </header>
+
+      {/* =========================================================
+          1b. SALES OVERVIEW (moved from Dashboard)
+      ========================================================= */}
+      <section className="bg-white rounded-3xl border border-slate-200/90 shadow-xs overflow-hidden">
+        <SalesOverviewCard />
+      </section>
 
       {/* =========================================================
           2. FOUR ESSENTIAL EARNINGS METRIC CARDS
