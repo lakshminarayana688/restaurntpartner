@@ -12,7 +12,10 @@ import {
   Settings,
   LogOut,
   Utensils,
-  ShieldAlert,
+  Users,
+  Bell,
+  Headphones,
+  Store,
 } from 'lucide-react';
 
 interface NavItem {
@@ -43,7 +46,7 @@ export const Sidebar: React.FC = () => {
       id: 'orders',
       label: 'Orders',
       icon: ShoppingBag,
-      badge: activeOrdersCount > 0 ? activeOrdersCount : 12,
+      badge: activeOrdersCount > 0 ? activeOrdersCount : undefined,
       allowedRoles: ['OWNER', 'MANAGER', 'STAFF', 'KITCHEN', 'CASHIER'],
     },
     {
@@ -77,10 +80,28 @@ export const Sidebar: React.FC = () => {
       allowedRoles: ['OWNER', 'MANAGER', 'ADMIN'],
     },
     {
-      id: 'admin',
-      label: 'Admin Console',
-      icon: ShieldAlert,
-      allowedRoles: ['OWNER', 'MANAGER', 'ADMIN'],
+      id: 'staff',
+      label: 'Staff Management',
+      icon: Users,
+      allowedRoles: ['OWNER', 'MANAGER'],
+    },
+    {
+      id: 'notifications_center',
+      label: 'Notifications',
+      icon: Bell,
+      allowedRoles: ['OWNER', 'MANAGER', 'STAFF', 'KITCHEN', 'CASHIER'],
+    },
+    {
+      id: 'support',
+      label: 'Support',
+      icon: Headphones,
+      allowedRoles: ['OWNER', 'MANAGER', 'STAFF'],
+    },
+    {
+      id: 'profile',
+      label: 'Restaurant Profile',
+      icon: Store,
+      allowedRoles: ['OWNER', 'MANAGER'],
     },
   ];
 
