@@ -1,15 +1,11 @@
 import React from 'react';
 import { AppProvider, useApp } from './context/AppContext';
 import { ToastContainer } from './components/common/ToastContainer';
-import { DemoToolbar } from './components/demo/DemoToolbar';
-import { DatabaseConfigModal } from './components/common/DatabaseConfigModal';
-import { DownloadApkModal } from './components/common/DownloadApkModal';
 import { Navbar } from './components/layout/Navbar';
 import { Sidebar } from './components/layout/Sidebar';
 import { MobileBottomNav } from './components/layout/MobileBottomNav';
 import { NotificationsDrawer } from './components/layout/NotificationsDrawer';
 import { OfflineModal } from './components/layout/OfflineModal';
-import { RiderCompanionModal } from './components/rider/RiderCompanionModal';
 
 // Modals
 import { IncomingOrderModal } from './screens/main/IncomingOrderModal';
@@ -43,19 +39,11 @@ import { SupportScreen } from './screens/main/SupportScreen';
 import { SettingsScreen } from './screens/main/SettingsScreen';
 import { AdminScreen } from './screens/main/AdminScreen';
 
-import { Plus, Zap, Bike, Volume2, VolumeX } from 'lucide-react';
+import { VolumeX } from 'lucide-react';
 
 const MainAppContent: React.FC = () => {
   const {
     currentScreen,
-    viewMode,
-    simulateNewIncomingOrder,
-    setScreen,
-    isDatabaseModalOpen,
-    setIsDatabaseModalOpen,
-    isDownloadModalOpen,
-    setIsDownloadModalOpen,
-    isPrototypeMode,
     isAudioUnlocked,
     unlockAudio,
     showToast,
@@ -148,26 +136,11 @@ const MainAppContent: React.FC = () => {
         {renderCurrentScreen()}
       </main>
       <MobileBottomNav />
-
-      {/* Floating Action Button only in Prototype Mode */}
-      {isPrototypeMode && (
-        <div className="fixed bottom-20 md:bottom-8 right-6 z-30 flex flex-col gap-2.5">
-          <button
-            onClick={simulateNewIncomingOrder}
-            title="Simulate New Order"
-            className="w-14 h-14 rounded-full bg-gradient-to-tr from-feedo-600 via-feedo-500 to-amber-400 text-white shadow-xl shadow-feedo-500/40 flex items-center justify-center hover:scale-110 active:scale-95 transition-all cursor-pointer border-2 border-white"
-          >
-            <Zap className="w-6 h-6 fill-current animate-pulse" />
-          </button>
-        </div>
-      )}
     </div>
   );
 
   return (
     <div className="min-h-screen bg-slate-50 flex flex-col">
-      <DemoToolbar />
-
       {/* Audio Permission Alert Banner (if browser blocked autoplay) */}
       {!isAudioUnlocked && (
         <div className="bg-gradient-to-r from-amber-600 via-orange-600 to-feedo-600 text-white px-3 sm:px-4 py-2 text-xs flex items-center justify-between gap-2 shadow-xs sticky top-0 z-40">
@@ -196,35 +169,11 @@ const MainAppContent: React.FC = () => {
       <ToastContainer />
       <IncomingOrderModal />
       <OrderDetailModal />
-      <RiderCompanionModal />
       <NotificationsDrawer />
       <OfflineModal />
-      <DatabaseConfigModal
-        isOpen={isDatabaseModalOpen}
-        onClose={() => setIsDatabaseModalOpen(false)}
-      />
-      <DownloadApkModal
-        isOpen={isDownloadModalOpen}
-        onClose={() => setIsDownloadModalOpen(false)}
-      />
 
       {/* Main Responsive Application */}
-      {!isPrototypeMode || viewMode === 'responsive' ? (
-        <div className="flex-1">{appView}</div>
-      ) : (
-        <div className="flex-1 flex items-center justify-center p-4 sm:p-8 bg-slate-900 overflow-y-auto">
-          {/* Smartphone Frame Container (Only available in Prototype Mode) */}
-          <div className="relative w-full max-w-[420px] h-[860px] bg-black rounded-[48px] p-3.5 shadow-2xl border-4 border-slate-700 overflow-hidden flex flex-col">
-            <div className="absolute top-4 left-1/2 -translate-x-1/2 w-36 h-5 bg-black rounded-full z-50 flex items-center justify-center">
-              <div className="w-3 h-3 rounded-full bg-slate-900 border border-slate-800" />
-            </div>
-            <div className="w-full h-full bg-slate-50 rounded-[38px] overflow-hidden overflow-y-auto relative flex flex-col">
-              {appView}
-            </div>
-            <div className="absolute bottom-2 left-1/2 -translate-x-1/2 w-32 h-1 bg-white/40 rounded-full z-50 pointer-events-none" />
-          </div>
-        </div>
-      )}
+      <div className="flex-1">{appView}</div>
     </div>
   );
 };

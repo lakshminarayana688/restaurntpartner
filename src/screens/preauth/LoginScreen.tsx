@@ -30,9 +30,11 @@ export const LoginScreen: React.FC = () => {
       <div className="w-full max-w-md bg-white rounded-3xl shadow-xl border border-slate-200 p-6 sm:p-8">
         {/* Brand Header */}
         <div className="flex flex-col items-center text-center mb-8">
-          <div className="w-16 h-16 rounded-2xl bg-gradient-to-tr from-feedo-600 to-feedo-400 flex items-center justify-center text-white shadow-lg shadow-feedo-500/25 mb-4">
-            <UtensilsCrossed className="w-8 h-8" />
-          </div>
+          <img
+            src="/feedo-logo.png"
+            alt="FEEDO Logo"
+            className="w-16 h-16 rounded-2xl object-cover shadow-lg shadow-amber-500/25 mb-4"
+          />
           <h1 className="text-2xl font-black text-slate-900 tracking-tight">FEEDO Partner</h1>
           <p className="text-xs text-slate-500 mt-1">Login to your restaurant dashboard</p>
         </div>

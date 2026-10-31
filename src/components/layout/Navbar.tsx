@@ -30,9 +30,11 @@ export const Navbar: React.FC = () => {
         <div className="flex items-center justify-between h-16">
           {/* Left: Brand & Restaurant Information */}
           <div className="flex items-center gap-3 min-w-0">
-            <div className="w-10 h-10 rounded-2xl bg-gradient-to-tr from-feedo-600 via-feedo-500 to-amber-500 flex items-center justify-center text-white font-black text-xl shadow-md shadow-feedo-500/25 shrink-0">
-              F
-            </div>
+            <img
+              src="/feedo-logo.png"
+              alt="FEEDO"
+              className="w-10 h-10 rounded-2xl object-cover shadow-md shadow-amber-500/20 shrink-0"
+            />
             <div className="min-w-0">
               <div className="flex items-center gap-2">
                 <h1 className="text-sm sm:text-base font-black text-slate-900 leading-tight truncate">

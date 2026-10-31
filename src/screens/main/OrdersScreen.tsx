@@ -28,14 +28,12 @@ export const OrdersScreen: React.FC = () => {
   const {
     orders,
     setSelectedOrder,
-    simulateNewIncomingOrder,
     testOrderSound,
     startPreparingOrder,
     markFoodReady,
     verifyPickup,
     confirmHandover,
     startOutForDelivery,
-    isPrototypeMode,
   } = useApp();
 
   const [activeTab, setActiveTab] = useState<TabType>('ALL');
@@ -136,15 +134,6 @@ export const OrdersScreen: React.FC = () => {
             <Volume2 className="w-4 h-4 text-amber-600" />
             <span>Test Sound</span>
           </button>
-          {isPrototypeMode && (
-            <button
-              onClick={simulateNewIncomingOrder}
-              className="py-2.5 px-4 bg-[#FFC700] hover:bg-amber-400 text-slate-900 font-bold text-xs rounded-xl shadow-md flex items-center gap-2 cursor-pointer transition-all"
-            >
-              <Zap className="w-4 h-4" />
-              <span>+ Simulate Order</span>
-            </button>
-          )}
         </div>
       </div>
 

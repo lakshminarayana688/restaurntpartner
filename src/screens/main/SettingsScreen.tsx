@@ -115,29 +115,9 @@ export const SettingsScreen: React.FC = () => {
               </button>
             </div>
 
-            {/* Notification Sound Profile & Test Sound Button */}
-            <div className="pt-3 border-t border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-              <div>
-                <h4 className="font-bold text-slate-800">Notification Sound Profile</h4>
-                <p className="text-[11px] text-slate-500">
-                  FEEDO Kitchen-Grade Multi-Tone Siren &amp; Bell Chime (Twin-Chirp + Triad Bell Strike)
-                </p>
-              </div>
-              <div className="flex items-center gap-2">
-                <button
-                  type="button"
-                  onClick={testOrderSound}
-                  className="px-4 py-2 bg-gradient-to-r from-feedo-500 to-amber-500 hover:from-feedo-600 hover:to-amber-600 text-white font-bold rounded-xl shadow-xs flex items-center gap-1.5 cursor-pointer transition-all hover:scale-102 active:scale-98"
-                >
-                  <Volume2 className="w-3.5 h-3.5" />
-                  <span>Test Order Sound</span>
-                </button>
-              </div>
-            </div>
-
-            {/* Volume and Repeat Options */}
-            <div className="pt-3 border-t border-slate-100 grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div>
+            {/* Volume & Test Sound */}
+            <div className="pt-3 border-t border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+              <div className="flex-1 max-w-sm">
                 <label className="font-bold text-slate-800 block mb-1">Alert Volume</label>
                 <div className="flex items-center gap-3">
                   <input
@@ -159,23 +139,14 @@ export const SettingsScreen: React.FC = () => {
               </div>
 
               <div>
-                <label className="font-bold text-slate-800 block mb-1">Chime Repeats (if unacknowledged)</label>
-                <div className="flex items-center gap-2">
-                  {[1, 2, 3].map((count) => (
-                    <button
-                      key={count}
-                      type="button"
-                      onClick={() => updateOrderSoundSettings({ repeatCount: count })}
-                      className={`flex-1 py-1.5 px-2 rounded-xl text-xs font-bold border transition-colors cursor-pointer ${
-                        orderSoundSettings.repeatCount === count
-                          ? 'bg-feedo-500 border-feedo-600 text-white shadow-xs'
-                          : 'bg-slate-50 border-slate-200 text-slate-700 hover:bg-slate-100'
-                      }`}
-                    >
-                      {count}x {count === 1 ? '(Default)' : ''}
-                    </button>
-                  ))}
-                </div>
+                <button
+                  type="button"
+                  onClick={testOrderSound}
+                  className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold rounded-xl shadow-2xs flex items-center gap-1.5 cursor-pointer transition-colors"
+                >
+                  <Volume2 className="w-3.5 h-3.5 text-feedo-600" />
+                  <span>Test Alert Sound</span>
+                </button>
               </div>
             </div>
 

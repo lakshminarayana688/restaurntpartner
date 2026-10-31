@@ -30,8 +30,12 @@ export const SplashScreen: React.FC = () => {
       {/* Center FEEDO Brand */}
       <div className="flex flex-col items-center text-center max-w-sm z-10 animate-in fade-in zoom-in duration-700">
         <div className="relative mb-6">
-          <div className="w-24 h-24 rounded-3xl bg-gradient-to-tr from-feedo-600 via-feedo-500 to-amber-400 flex items-center justify-center shadow-2xl shadow-feedo-500/40 border border-feedo-400/30">
-            <UtensilsCrossed className="w-12 h-12 text-white stroke-[2.2]" />
+          <div className="w-24 h-24 rounded-3xl overflow-hidden shadow-2xl shadow-amber-500/40 border border-amber-400/30">
+            <img
+              src="/feedo-logo.png"
+              alt="FEEDO"
+              className="w-full h-full object-cover"
+            />
           </div>
           <span className="absolute -bottom-2 -right-2 bg-emerald-500 text-white text-[10px] font-black px-2 py-0.5 rounded-full border-2 border-slate-950 shadow-md">
             PARTNER

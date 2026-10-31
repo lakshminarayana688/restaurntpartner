@@ -54,9 +54,11 @@ export const Sidebar: React.FC = () => {
     <aside className="w-64 bg-white border-r border-slate-100 flex flex-col h-screen sticky top-0 z-30 select-none shrink-0">
       {/* Brand Header */}
       <div className="p-5 flex items-center gap-2.5 border-b border-slate-100">
-        <div className="w-9 h-9 bg-[#FFC700] rounded-2xl flex items-center justify-center shrink-0 shadow-md shadow-amber-200">
-          <UtensilsCrossed className="w-5 h-5 text-slate-900" />
-        </div>
+        <img
+          src="/feedo-logo.png"
+          alt="FEEDO"
+          className="w-9 h-9 rounded-2xl object-cover shadow-md shadow-amber-200 shrink-0"
+        />
         <div>
           <span className="text-base font-black tracking-tight text-slate-900">
             Feedo<span className="text-amber-500">Partner</span>
