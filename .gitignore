@@ -1,4 +1,6 @@
-# Logs
+# Separate nested repositories
+feedo-delivery-partner/
+
 logs
 *.log
 npm-debug.log*
