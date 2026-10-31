@@ -7,6 +7,7 @@ import {
   User,
   ShieldCheck,
   ChevronDown,
+  MoreVertical,
 } from 'lucide-react';
 
 export const Navbar: React.FC = () => {
@@ -20,6 +21,7 @@ export const Navbar: React.FC = () => {
     setIsNotificationsOpen,
     setScreen,
     currentUserRole,
+    setIsMobileDrawerOpen,
   } = useApp();
 
   const unreadCount = notifications.filter((n) => !n.read).length;
@@ -135,6 +137,15 @@ export const Navbar: React.FC = () => {
                   {currentUserRole}
                 </span>
               </div>
+            </button>
+
+            {/* Mobile Three-Dot Menu Drawer Toggle */}
+            <button
+              onClick={() => setIsMobileDrawerOpen(true)}
+              title="Open Navigation Menu"
+              className="md:hidden p-2 text-slate-700 hover:text-slate-900 rounded-xl hover:bg-slate-100 border border-slate-200 transition-colors cursor-pointer"
+            >
+              <MoreVertical className="w-4 h-4" />
             </button>
           </div>
         </div>

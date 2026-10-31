@@ -120,6 +120,8 @@ interface AppContextType {
   isNotificationsOpen: boolean;
   setIsNotificationsOpen: (open: boolean) => void;
   markNotificationsAsRead: () => void;
+  isMobileDrawerOpen: boolean;
+  setIsMobileDrawerOpen: (open: boolean) => void;
   
   toasts: ToastMessage[];
   showToast: (msg: string, type?: 'success' | 'error' | 'info' | 'warning') => void;
@@ -276,6 +278,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [isRiderSimulatorOpen, setIsRiderSimulatorOpen] = useState<boolean>(false);
   const [isOfflineModalOpen, setIsOfflineModalOpen] = useState<boolean>(false);
   const [isNotificationsOpen, setIsNotificationsOpen] = useState<boolean>(false);
+  const [isMobileDrawerOpen, setIsMobileDrawerOpen] = useState<boolean>(false);
   const [isDatabaseModalOpen, setIsDatabaseModalOpen] = useState<boolean>(false);
   const [isDownloadModalOpen, setIsDownloadModalOpen] = useState<boolean>(false);
   const [isSupabaseLive, setIsSupabaseLive] = useState<boolean>(isSupabaseConfigured());
@@ -1218,6 +1221,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         isNotificationsOpen,
         setIsNotificationsOpen,
         markNotificationsAsRead,
+        isMobileDrawerOpen,
+        setIsMobileDrawerOpen,
         toasts,
         showToast,
         viewMode,

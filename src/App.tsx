@@ -129,9 +129,7 @@ const MainAppContent: React.FC = () => {
       <div className="md:hidden">
         <Navbar />
       </div>
-      <div className="hidden md:block shrink-0">
-        <Sidebar />
-      </div>
+      <Sidebar />
       <main className="flex-1 min-w-0 overflow-y-auto pb-24 md:pb-12 bg-slate-50">
         {renderCurrentScreen()}
       </main>
