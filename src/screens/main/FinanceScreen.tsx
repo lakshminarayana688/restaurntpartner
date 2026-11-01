@@ -187,7 +187,7 @@ export const FinanceScreen: React.FC = () => {
                 Clearing Ready
               </span>
             </div>
-            <p className="text-[11px] text-slate-400 mt-1">Auto-clearing tomorrow by 10:00 AM</p>
+            <p className="text-[11px] text-slate-400 mt-1">Auto-clearing next day by 10:00 AM</p>
           </div>
         </div>
 
@@ -288,7 +288,7 @@ export const FinanceScreen: React.FC = () => {
             <span className="text-slate-400 block text-[10px] uppercase font-bold tracking-wider">
               Clearing Cadence
             </span>
-            <span className="font-bold text-emerald-700 mt-0.5 block">Daily by 10:00 AM</span>
+            <span className="font-bold text-emerald-700 mt-0.5 block">Next day 10:00 AM</span>
           </div>
         </div>
       </section>
