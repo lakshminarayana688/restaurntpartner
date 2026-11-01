@@ -36,7 +36,7 @@ export const Sidebar: React.FC = () => {
     setIsMobileDrawerOpen,
   } = useApp();
 
-  // Prevent background scrolling when mobile drawer is open
+  // Prevent background scrolling when navigation drawer is open
   useEffect(() => {
     if (isMobileDrawerOpen) {
       document.body.style.overflow = 'hidden';
@@ -87,112 +87,21 @@ export const Sidebar: React.FC = () => {
   return (
     <>
       {/* =========================================================
-          1. DESKTOP PERMANENT SIDEBAR (hidden on mobile)
-      ========================================================= */}
-      <aside className="hidden md:flex w-64 bg-white border-r border-slate-100 flex-col h-screen sticky top-0 z-30 select-none shrink-0">
-        {/* Brand Header */}
-        <div className="p-5 flex items-center gap-2.5 border-b border-slate-100 shrink-0">
-          <img
-            src="/feedo-logo.png"
-            alt="FEEDO"
-            className="w-9 h-9 rounded-2xl object-cover shadow-md shadow-amber-200 shrink-0"
-          />
-          <div>
-            <span className="text-base font-black tracking-tight text-slate-900">
-              Feedo<span className="text-amber-500">Partner</span>
-            </span>
-            <p className="text-[10px] text-slate-400 font-medium">Restaurant Dashboard</p>
-          </div>
-        </div>
-
-        {/* Nav List */}
-        <nav className="flex-1 px-3 py-3 space-y-1 overflow-y-auto">
-          {visibleNav.map((item) => {
-            const Icon = item.icon;
-            const isActive = currentScreen === item.id;
-            return (
-              <button
-                key={item.id}
-                id={`nav-${item.id}`}
-                onClick={() => handleNavClick(item.id)}
-                className={`w-full h-11 flex items-center gap-3 px-3 rounded-2xl text-sm transition-all cursor-pointer ${
-                  isActive
-                    ? 'bg-[#FFC700] text-slate-900 font-bold shadow-xs'
-                    : 'font-medium text-slate-500 hover:bg-slate-50 hover:text-slate-800'
-                }`}
-              >
-                <Icon className={`w-[22px] h-[22px] shrink-0 ${isActive ? 'text-slate-900' : 'text-slate-500'}`} />
-                <span className="truncate">{item.label}</span>
-                {item.badge !== undefined && (
-                  <span className={`ml-auto px-2 py-0.5 rounded-full text-[10px] font-bold ${
-                    isActive ? 'bg-slate-900 text-white' : 'bg-rose-100 text-rose-600'
-                  }`}>
-                    {item.badge}
-                  </span>
-                )}
-              </button>
-            );
-          })}
-        </nav>
-
-        {/* Footer: Settings & Profile */}
-        <div className="p-3 border-t border-slate-100 shrink-0">
-          <button
-            id="nav-settings"
-            onClick={() => handleNavClick('settings')}
-            className={`w-full h-11 flex items-center gap-3 px-3 rounded-2xl text-sm font-medium transition-all mb-2 cursor-pointer ${
-              currentScreen === 'settings'
-                ? 'bg-[#FFC700] text-slate-900 font-bold shadow-xs'
-                : 'text-slate-500 hover:bg-slate-50 hover:text-slate-800'
-            }`}
-          >
-            <Settings className={`w-[22px] h-[22px] shrink-0 ${currentScreen === 'settings' ? 'text-slate-900' : 'text-slate-500'}`} />
-            <span>Settings</span>
-          </button>
-
-          {/* User card */}
-          <div className="flex items-center gap-3 p-3 bg-slate-50 rounded-2xl border border-slate-100">
-            <div className="w-9 h-9 rounded-full bg-amber-100 border-2 border-[#FFC700] overflow-hidden shrink-0">
-              <img
-                src="https://api.dicebear.com/7.x/avataaars/svg?seed=Felix"
-                alt="User"
-                className="w-full h-full object-cover"
-              />
-            </div>
-            <div className="flex-1 overflow-hidden min-w-0 text-left">
-              <p className="text-xs font-bold text-slate-900 truncate">
-                {restaurant.restaurantName || 'The Golden Grill'}
-              </p>
-              <p className="text-[10px] text-slate-400 truncate">
-                {currentUserRole === 'OWNER' ? 'Owner' : 'Manager'}
-              </p>
-            </div>
-            <button
-              onClick={handleLogout}
-              title="Log out"
-              className="text-slate-400 hover:text-rose-500 p-1 rounded-xl transition-colors cursor-pointer"
-            >
-              <LogOut className="w-4 h-4" />
-            </button>
-          </div>
-        </div>
-      </aside>
-
-      {/* =========================================================
-          2. MOBILE SLIDE-OUT NAVIGATION DRAWER (md:hidden)
+          NAVIGATION SIDEBAR / DRAWER (Desktop, Tablet & Mobile)
+          Opened via Hamburger (☰) button in header
       ========================================================= */}
       {isMobileDrawerOpen && (
-        <div className="md:hidden fixed inset-0 z-50 select-none">
-          {/* Semi-transparent dark overlay over dashboard */}
+        <div className="fixed inset-0 z-50 select-none">
+          {/* Semi-transparent dark overlay (Click outside to close) */}
           <div
             onClick={() => setIsMobileDrawerOpen(false)}
             className="fixed inset-0 bg-black/60 backdrop-blur-xs transition-opacity animate-in fade-in duration-200"
             aria-hidden="true"
           />
 
-          {/* Slide-out White Drawer */}
-          <aside className="fixed inset-y-0 left-0 z-50 w-[85vw] max-w-[340px] min-w-[280px] h-full bg-white flex flex-col shadow-2xl animate-in slide-in-from-left duration-250 ease-out">
-            {/* Drawer Header (Fixed) */}
+          {/* Slide-out White Sidebar */}
+          <aside className="fixed inset-y-0 left-0 z-50 w-[85vw] sm:w-80 md:w-80 max-w-[340px] min-w-[280px] h-full bg-white flex flex-col shadow-2xl animate-in slide-in-from-left duration-250 ease-out">
+            {/* Header (Fixed) */}
             <div className="p-4 sm:p-5 flex items-center justify-between border-b border-slate-100 shrink-0">
               <div className="flex items-center gap-2.5">
                 <img
@@ -225,6 +134,7 @@ export const Sidebar: React.FC = () => {
                 return (
                   <button
                     key={item.id}
+                    id={`nav-${item.id}`}
                     onClick={() => handleNavClick(item.id)}
                     className={`w-full h-12 flex items-center gap-3.5 px-3.5 rounded-2xl text-sm transition-all cursor-pointer ${
                       isActive
@@ -250,6 +160,7 @@ export const Sidebar: React.FC = () => {
 
               {/* Settings Nav Item */}
               <button
+                id="nav-settings"
                 onClick={() => handleNavClick('settings')}
                 className={`w-full h-12 flex items-center gap-3.5 px-3.5 rounded-2xl text-sm transition-all cursor-pointer ${
                   currentScreen === 'settings'

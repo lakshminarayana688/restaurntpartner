@@ -125,14 +125,14 @@ const MainAppContent: React.FC = () => {
   const appView = isPreAuth ? (
     <div className="min-h-screen bg-slate-50">{renderCurrentScreen()}</div>
   ) : (
-    <div className="min-h-screen bg-slate-50 flex flex-col md:flex-row">
-      <div className="md:hidden">
-        <Navbar />
+    <div className="min-h-screen bg-slate-50 flex flex-col">
+      <Navbar />
+      <div className="flex-1 flex min-w-0 relative">
+        <Sidebar />
+        <main className="flex-1 min-w-0 overflow-y-auto pb-24 md:pb-12 bg-slate-50">
+          {renderCurrentScreen()}
+        </main>
       </div>
-      <Sidebar />
-      <main className="flex-1 min-w-0 overflow-y-auto pb-24 md:pb-12 bg-slate-50">
-        {renderCurrentScreen()}
-      </main>
       <MobileBottomNav />
     </div>
   );

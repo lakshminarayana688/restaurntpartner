@@ -7,7 +7,7 @@ import {
   User,
   ShieldCheck,
   ChevronDown,
-  MoreVertical,
+  Menu,
 } from 'lucide-react';
 
 export const Navbar: React.FC = () => {
@@ -21,6 +21,7 @@ export const Navbar: React.FC = () => {
     setIsNotificationsOpen,
     setScreen,
     currentUserRole,
+    isMobileDrawerOpen,
     setIsMobileDrawerOpen,
   } = useApp();
 
@@ -30,8 +31,18 @@ export const Navbar: React.FC = () => {
     <header className="sticky top-0 z-30 bg-white/95 backdrop-blur-md border-b border-slate-200 shadow-2xs select-none">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16">
-          {/* Left: Brand & Restaurant Information */}
+          {/* Left: Hamburger Button + Brand & Restaurant Information */}
           <div className="flex items-center gap-3 min-w-0">
+            <button
+              type="button"
+              id="hamburger-nav-btn"
+              onClick={() => setIsMobileDrawerOpen(!isMobileDrawerOpen)}
+              title={isMobileDrawerOpen ? "Close Navigation Menu" : "Open Navigation Menu"}
+              className="p-2 text-slate-700 hover:text-slate-900 rounded-xl hover:bg-slate-100 border border-slate-200 transition-colors cursor-pointer flex items-center justify-center shrink-0"
+              aria-label="Navigation Menu"
+            >
+              <Menu className="w-5 h-5 text-slate-800" />
+            </button>
             <img
               src="/feedo-logo.png"
               alt="FEEDO"
@@ -137,15 +148,6 @@ export const Navbar: React.FC = () => {
                   {currentUserRole}
                 </span>
               </div>
-            </button>
-
-            {/* Mobile Three-Dot Menu Drawer Toggle */}
-            <button
-              onClick={() => setIsMobileDrawerOpen(true)}
-              title="Open Navigation Menu"
-              className="md:hidden p-2 text-slate-700 hover:text-slate-900 rounded-xl hover:bg-slate-100 border border-slate-200 transition-colors cursor-pointer"
-            >
-              <MoreVertical className="w-4 h-4" />
             </button>
           </div>
         </div>
