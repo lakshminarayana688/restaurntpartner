@@ -4,7 +4,6 @@ import {
   ShoppingBag,
   CheckCircle,
   XCircle,
-  Bell,
   Star,
   ChevronRight,
   Zap,
@@ -27,14 +26,10 @@ export const DashboardScreen: React.FC = () => {
     orders,
     setSelectedOrder,
     setScreen,
-    notifications,
-    setIsNotificationsOpen,
   } = useApp();
 
   const [activeCategory, setActiveCategory] = useState('All');
   const [searchQuery, setSearchQuery] = useState('');
-
-  const unreadCount = notifications.filter((n) => !n.read).length;
 
   const activeOrders = useMemo(() =>
     orders.filter((o) =>
@@ -73,15 +68,6 @@ export const DashboardScreen: React.FC = () => {
             </h1>
           </div>
           <div className="flex items-center gap-2">
-            <button
-              onClick={() => setIsNotificationsOpen(true)}
-              className="relative w-10 h-10 flex items-center justify-center bg-slate-100 rounded-2xl text-slate-600 hover:bg-slate-200 transition-colors"
-            >
-              <Bell className="w-4 h-4" />
-              {unreadCount > 0 && (
-                <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-rose-500 rounded-full" />
-              )}
-            </button>
             <button
               onClick={toggleOnlineStatus}
               className={`flex items-center gap-1.5 px-3 py-2 rounded-2xl text-xs font-bold transition-all ${

@@ -2,21 +2,12 @@ import React from 'react';
 import { useApp } from '../../context/AppContext';
 import {
   Bell,
-  Volume2,
-  VolumeX,
-  User,
-  ShieldCheck,
-  ChevronDown,
   Menu,
 } from 'lucide-react';
 
 export const Navbar: React.FC = () => {
   const {
     restaurant,
-    toggleOnlineStatus,
-    updateRestaurant,
-    updateOrderSoundSettings,
-    testOrderSound,
     notifications,
     setIsNotificationsOpen,
     setScreen,
@@ -77,56 +68,6 @@ export const Navbar: React.FC = () => {
 
           {/* Right: Operational Controls & Profile */}
           <div className="flex items-center gap-2 sm:gap-3 shrink-0">
-            {/* Audio Alert Chime Toggle */}
-            <button
-              onClick={() => {
-                const next = !restaurant.newOrderSound;
-                updateRestaurant({ newOrderSound: next });
-                updateOrderSoundSettings({ enabled: next });
-              }}
-              title={restaurant.newOrderSound ? 'Mute order notification chimes' : 'Enable order notification chimes'}
-              className={`p-2 rounded-xl border transition-colors cursor-pointer ${
-                restaurant.newOrderSound
-                  ? 'border-slate-200 bg-slate-50 text-slate-700 hover:bg-slate-100'
-                  : 'border-rose-200 bg-rose-50 text-rose-600'
-              }`}
-            >
-              {restaurant.newOrderSound ? (
-                <Volume2 className="w-4 h-4 text-feedo-600" />
-              ) : (
-                <VolumeX className="w-4 h-4" />
-              )}
-            </button>
-
-            {/* Test Order Sound Button */}
-            <button
-              onClick={testOrderSound}
-              title="Test Order Assignment Notification Sound"
-              className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-amber-50 hover:bg-amber-100 text-amber-900 border border-amber-300 text-xs font-bold transition-all shadow-2xs cursor-pointer"
-            >
-              <Volume2 className="w-3.5 h-3.5 text-amber-600" />
-              <span className="hidden md:inline">Test Order Sound</span>
-            </button>
-
-
-            {/* Live Kitchen Status (ONLINE / OFFLINE) */}
-            <button
-              onClick={toggleOnlineStatus}
-              title="Toggle restaurant online/offline status"
-              className={`flex items-center gap-2 px-3.5 py-1.5 rounded-full border text-xs font-bold transition-all shadow-2xs cursor-pointer ${
-                restaurant.isOnline
-                  ? 'border-emerald-300 bg-emerald-50 text-emerald-800 hover:bg-emerald-100'
-                  : 'border-rose-300 bg-rose-50 text-rose-800 hover:bg-rose-100'
-              }`}
-            >
-              <span
-                className={`w-2.5 h-2.5 rounded-full ${
-                  restaurant.isOnline ? 'bg-emerald-500 live-pulse' : 'bg-rose-500'
-                }`}
-              />
-              <span>{restaurant.isOnline ? 'ONLINE' : 'OFFLINE'}</span>
-            </button>
-
             {/* Real Notifications Bell */}
             <button
               onClick={() => setIsNotificationsOpen(true)}
