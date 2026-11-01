@@ -12,15 +12,15 @@ import {
   AlertCircle,
   PhoneCall,
   ChevronRight,
-  Send,
 } from 'lucide-react';
+import { FeedoDispatchAgentModal } from '../../components/chat/FeedoDispatchAgentModal';
 
 export const SupportScreen: React.FC = () => {
   const { showToast } = useApp();
   const [searchFaq, setSearchFaq] = useState('');
   const [activeFaqCat, setActiveFaqCat] = useState('ALL');
   const [isChatModalOpen, setIsChatModalOpen] = useState(false);
-  const [chatMessage, setChatMessage] = useState('');
+  const [activeOrderIdForChat, setActiveOrderIdForChat] = useState<string | undefined>(undefined);
 
   const tickets = [
     { id: 'TKT-9912', subject: 'Rider ETA Delay on Koramangala 4th Block Signal', priority: 'High', status: 'In Progress', time: '10 mins ago', agent: 'Sandeep (FEEDO Dispatch)' },
@@ -40,13 +40,6 @@ export const SupportScreen: React.FC = () => {
     const matchText = f.q.toLowerCase().includes(searchFaq.toLowerCase()) || f.a.toLowerCase().includes(searchFaq.toLowerCase());
     return matchCat && matchText;
   });
-
-  const handleSendChat = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!chatMessage.trim()) return;
-    showToast('Message sent to FEEDO live agent. Agent Sandeep is typing...', 'success');
-    setChatMessage('');
-  };
 
   return (
     <div className="p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto space-y-8 animate-in fade-in">
@@ -142,8 +135,11 @@ export const SupportScreen: React.FC = () => {
               </div>
 
               <button
-                onClick={() => showToast(`Opening ticket log ${t.id}`, 'info')}
-                className="text-xs font-bold text-feedo-600 hover:underline self-end sm:self-auto"
+                onClick={() => {
+                  setActiveOrderIdForChat(t.id);
+                  setIsChatModalOpen(true);
+                }}
+                className="text-xs font-bold text-feedo-600 hover:underline self-end sm:self-auto cursor-pointer"
               >
                 View Discussion →
               </button>
@@ -202,58 +198,15 @@ export const SupportScreen: React.FC = () => {
         </div>
       </div>
 
-      {/* Live Chat Modal Drawer */}
-      {isChatModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/70 backdrop-blur-xs animate-in fade-in">
-          <div className="relative w-full max-w-md bg-white rounded-3xl shadow-2xl border border-slate-200 overflow-hidden flex flex-col h-[520px]">
-            {/* Header */}
-            <div className="p-4 bg-slate-900 text-white flex items-center justify-between">
-              <div className="flex items-center gap-2.5">
-                <div className="w-8 h-8 rounded-full bg-emerald-500 flex items-center justify-center font-bold text-xs text-slate-950">
-                  FD
-                </div>
-                <div>
-                  <h3 className="text-xs font-bold text-white">FEEDO Dispatch Agent</h3>
-                  <p className="text-[10px] text-emerald-400">🟢 Online • Sandeep (Lead Dispatcher)</p>
-                </div>
-              </div>
-              <button
-                onClick={() => setIsChatModalOpen(false)}
-                className="text-slate-400 hover:text-white text-xs font-bold"
-              >
-                Close ✕
-              </button>
-            </div>
-
-            {/* Chat Body */}
-            <div className="flex-1 p-4 overflow-y-auto space-y-3 text-xs bg-slate-50">
-              <div className="p-3 bg-white rounded-2xl border border-slate-200 max-w-[85%] text-slate-800">
-                Hello Lucky Family Restaurant! I'm Sandeep from FEEDO Partner Support. How can I help with your orders or kitchen operations right now?
-              </div>
-              <div className="p-3 bg-feedo-500 text-white rounded-2xl max-w-[85%] ml-auto text-xs">
-                Hi Sandeep, all kitchen operations are running smoothly today.
-              </div>
-            </div>
-
-            {/* Input */}
-            <form onSubmit={handleSendChat} className="p-3 bg-white border-t border-slate-100 flex gap-2">
-              <input
-                type="text"
-                value={chatMessage}
-                onChange={(e) => setChatMessage(e.target.value)}
-                placeholder="Type your message to support..."
-                className="flex-1 px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs focus:outline-hidden focus:border-feedo-500"
-              />
-              <button
-                type="submit"
-                className="p-2.5 bg-feedo-500 hover:bg-feedo-600 text-white rounded-xl"
-              >
-                <Send className="w-4 h-4" />
-              </button>
-            </form>
-          </div>
-        </div>
-      )}
+      {/* Live AI Dispatch Agent Modal */}
+      <FeedoDispatchAgentModal
+        isOpen={isChatModalOpen}
+        onClose={() => {
+          setIsChatModalOpen(false);
+          setActiveOrderIdForChat(undefined);
+        }}
+        initialOrderId={activeOrderIdForChat}
+      />
     </div>
   );
 };

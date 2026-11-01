@@ -20,6 +20,7 @@ import {
   CalendarDays,
   TrendingUp,
 } from 'lucide-react';
+import { FeedoDispatchAgentModal } from '../../components/chat/FeedoDispatchAgentModal';
 
 type TabType = 'ALL' | 'NEW' | 'PREPARING' | 'READY' | 'PICKED_UP' | 'DELIVERED' | 'CANCELLED';
 type DateRange = 'today' | '7days' | '30days' | 'all';
@@ -39,6 +40,7 @@ export const OrdersScreen: React.FC = () => {
   const [activeTab, setActiveTab] = useState<TabType>('ALL');
   const [searchQuery, setSearchQuery] = useState('');
   const [dateRange, setDateRange] = useState<DateRange>('all');
+  const [isDispatchAgentOpen, setIsDispatchAgentOpen] = useState(false);
 
   // ── Date-filtered orders ──────────────────────────────────────
   const dateFilteredOrders = useMemo(() => {
@@ -126,6 +128,14 @@ export const OrdersScreen: React.FC = () => {
           </p>
         </div>
         <div className="flex items-center gap-2 self-start sm:self-auto flex-wrap">
+          <button
+            onClick={() => setIsDispatchAgentOpen(true)}
+            title="Open AI Dispatch Agent (Sandeep) for instant order resolution"
+            className="py-2.5 px-3.5 bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs rounded-xl shadow-md flex items-center gap-2 cursor-pointer transition-all active:scale-95"
+          >
+            <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+            <span>AI Dispatch Agent</span>
+          </button>
           <button
             onClick={testOrderSound}
             title="Test Order Sound"
@@ -403,6 +413,12 @@ export const OrdersScreen: React.FC = () => {
           ))}
         </div>
       )}
+
+      {/* AI Dispatch Agent Modal */}
+      <FeedoDispatchAgentModal
+        isOpen={isDispatchAgentOpen}
+        onClose={() => setIsDispatchAgentOpen(false)}
+      />
     </div>
   );
 };
