@@ -31,7 +31,7 @@ export const Navbar: React.FC = () => {
     <header className="sticky top-0 z-30 bg-white/95 backdrop-blur-md border-b border-slate-200 shadow-2xs select-none">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16">
-          {/* Left: Hamburger Button + Brand & Restaurant Information */}
+          {/* Left: Hamburger Button + FEEDO Brand Lockup + Restaurant Info */}
           <div className="flex items-center gap-3 min-w-0">
             <button
               type="button"
@@ -43,23 +43,35 @@ export const Navbar: React.FC = () => {
             >
               <Menu className="w-5 h-5 text-slate-800" />
             </button>
-            <img
-              src="/feedo-logo.png"
-              alt="FEEDO"
-              className="w-10 h-10 rounded-2xl object-cover shadow-md shadow-amber-500/20 shrink-0"
-            />
-            <div className="min-w-0">
+
+            {/* FEEDO Brand Logo (Fork Pin + FEEDO wordmark) */}
+            <div
+              className="flex items-center gap-2 cursor-pointer shrink-0"
+              onClick={() => setScreen('dashboard')}
+              title="FEEDO Dashboard"
+            >
+              <img
+                src="/feedo-logo.png"
+                alt="FEEDO"
+                className="w-8 h-8 sm:w-9 sm:h-9 object-contain shrink-0"
+              />
+              <span className="text-xl sm:text-2xl font-black tracking-tight text-slate-900 font-heading">
+                FEEDO
+              </span>
+            </div>
+
+            <div className="h-5 w-px bg-slate-200 hidden sm:block shrink-0" />
+
+            {/* Restaurant Info */}
+            <div className="min-w-0 hidden sm:block">
               <div className="flex items-center gap-2">
-                <h1 className="text-sm sm:text-base font-black text-slate-900 leading-tight truncate">
+                <h1 className="text-xs sm:text-sm font-bold text-slate-700 leading-tight truncate">
                   {restaurant.restaurantName}
                 </h1>
-                <span className="hidden sm:inline-flex items-center gap-0.5 text-[10px] font-bold bg-emerald-50 text-emerald-800 border border-emerald-200 px-2 py-0.5 rounded-full shrink-0">
+                <span className="hidden md:inline-flex items-center gap-0.5 text-[10px] font-bold bg-emerald-50 text-emerald-800 border border-emerald-200 px-2 py-0.5 rounded-full shrink-0">
                   ★ {restaurant.rating}
                 </span>
               </div>
-              <p className="text-[11px] text-slate-500 truncate max-w-xs sm:max-w-md mt-0.5">
-                {restaurant.address}
-              </p>
             </div>
           </div>
 

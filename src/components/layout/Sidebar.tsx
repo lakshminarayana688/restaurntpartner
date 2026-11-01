@@ -103,18 +103,18 @@ export const Sidebar: React.FC = () => {
           <aside className="fixed inset-y-0 left-0 z-50 w-[85vw] sm:w-80 md:w-80 max-w-[340px] min-w-[280px] h-full bg-white flex flex-col shadow-2xl animate-in slide-in-from-left duration-250 ease-out">
             {/* Header (Fixed) */}
             <div className="p-4 sm:p-5 flex items-center justify-between border-b border-slate-100 shrink-0">
-              <div className="flex items-center gap-2.5">
+              <div className="flex items-center gap-2">
                 <img
                   src="/feedo-logo.png"
                   alt="FEEDO"
-                  className="w-9 h-9 rounded-2xl object-cover shadow-sm shrink-0"
+                  className="w-8 h-8 sm:w-9 sm:h-9 object-contain shrink-0"
                 />
-                <div>
-                  <span className="text-base font-black tracking-tight text-slate-900 leading-none block">
-                    Feedo<span className="text-amber-500">Partner</span>
-                  </span>
-                  <p className="text-[10px] text-slate-400 font-medium mt-0.5">Restaurant Dashboard</p>
-                </div>
+                <span className="text-xl font-black tracking-tight text-slate-900 font-heading">
+                  FEEDO
+                </span>
+                <span className="text-[10px] font-black uppercase tracking-wider bg-amber-100 text-amber-800 border border-amber-300 px-2 py-0.5 rounded-md ml-1">
+                  Partner
+                </span>
               </div>
               <button
                 type="button"
