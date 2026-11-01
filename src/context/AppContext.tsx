@@ -32,7 +32,6 @@ import {
   validateRequiredDocuments,
 } from '../services';
 import { getSupabaseClient, isSupabaseConfigured } from '../utils/supabase';
-import { isSupabaseConfigured } from '../utils/supabase';
 
 
 export type ScreenName =

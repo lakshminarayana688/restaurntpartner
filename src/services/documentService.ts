@@ -306,3 +306,4 @@ export function validateRequiredDocuments(documents: VerificationDocument[]): {
     missingNames,
   };
 }
+
