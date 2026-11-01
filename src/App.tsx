@@ -14,6 +14,8 @@ import { OrderDetailModal } from './screens/main/OrderDetailModal';
 // Pre-auth screens
 import { SplashScreen } from './screens/preauth/SplashScreen';
 import { OnboardingScreen } from './screens/preauth/OnboardingScreen';
+import { TermsConditionsScreen } from './screens/preauth/TermsConditionsScreen';
+import { PermissionsScreen } from './screens/preauth/PermissionsScreen';
 import { LoginScreen } from './screens/preauth/LoginScreen';
 import { OtpScreen } from './screens/preauth/OtpScreen';
 import { RegistrationScreen } from './screens/preauth/RegistrationScreen';
@@ -52,6 +54,8 @@ const MainAppContent: React.FC = () => {
   const isPreAuth = [
     'splash',
     'onboarding',
+    'terms',
+    'permissions',
     'login',
     'otp',
     'register',
@@ -68,6 +72,10 @@ const MainAppContent: React.FC = () => {
         return <SplashScreen />;
       case 'onboarding':
         return <OnboardingScreen />;
+      case 'terms':
+        return <TermsConditionsScreen />;
+      case 'permissions':
+        return <PermissionsScreen />;
       case 'login':
         return <LoginScreen />;
       case 'otp':

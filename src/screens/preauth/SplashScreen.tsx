@@ -5,12 +5,21 @@ import { Sparkles, ArrowRight, UtensilsCrossed } from 'lucide-react';
 export const SplashScreen: React.FC = () => {
   const { setScreen } = useApp();
 
+  const handleProceed = () => {
+    const hasAcceptedTerms = localStorage.getItem('feedo_terms_accepted') === 'true';
+    if (hasAcceptedTerms) {
+      setScreen('login');
+    } else {
+      setScreen('onboarding');
+    }
+  };
+
   useEffect(() => {
     const timer = setTimeout(() => {
-      setScreen('onboarding');
+      handleProceed();
     }, 2800);
     return () => clearTimeout(timer);
-  }, [setScreen]);
+  }, []);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-feedo-950 flex flex-col items-center justify-between p-8 text-white relative overflow-hidden">
@@ -20,7 +29,7 @@ export const SplashScreen: React.FC = () => {
 
       <div className="w-full flex justify-end">
         <button
-          onClick={() => setScreen('onboarding')}
+          onClick={handleProceed}
           className="text-xs font-semibold text-slate-400 hover:text-white px-3 py-1.5 rounded-full border border-slate-800 hover:border-slate-700 transition-colors"
         >
           Skip Intro →

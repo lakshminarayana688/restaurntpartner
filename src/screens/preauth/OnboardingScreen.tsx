@@ -33,11 +33,20 @@ export const OnboardingScreen: React.FC = () => {
     },
   ];
 
+  const handleCompleteOnboarding = () => {
+    const hasAcceptedTerms = localStorage.getItem('feedo_terms_accepted') === 'true';
+    if (hasAcceptedTerms) {
+      setScreen('login');
+    } else {
+      setScreen('terms');
+    }
+  };
+
   const handleNext = () => {
     if (activeSlide < slides.length - 1) {
       setActiveSlide(activeSlide + 1);
     } else {
-      setScreen('login');
+      handleCompleteOnboarding();
     }
   };
 
@@ -55,7 +64,7 @@ export const OnboardingScreen: React.FC = () => {
           <span className="font-bold text-slate-900 text-sm">FEEDO Partner</span>
         </div>
         <button
-          onClick={() => setScreen('login')}
+          onClick={handleCompleteOnboarding}
           className="text-xs font-semibold text-slate-500 hover:text-slate-800 py-1.5 px-3 rounded-lg hover:bg-slate-200/60 transition-colors"
         >
           Skip

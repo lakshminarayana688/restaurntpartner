@@ -37,6 +37,8 @@ import { getSupabaseClient, isSupabaseConfigured } from '../utils/supabase';
 export type ScreenName =
   | 'splash'
   | 'onboarding'
+  | 'terms'
+  | 'permissions'
   | 'login'
   | 'otp'
   | 'register'

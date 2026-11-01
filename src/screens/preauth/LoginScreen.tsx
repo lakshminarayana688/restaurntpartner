@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useApp } from '../../context/AppContext';
 import { authService } from '../../services/authService';
 import { Phone, ArrowRight, ShieldCheck, Store, UtensilsCrossed } from 'lucide-react';
@@ -6,6 +6,13 @@ import { Phone, ArrowRight, ShieldCheck, Store, UtensilsCrossed } from 'lucide-r
 export const LoginScreen: React.FC = () => {
   const { setScreen, restaurant, updateRestaurant, showToast, isDemoMode } = useApp();
   const [mobileNumber, setMobileNumber] = useState('9876543210');
+
+  useEffect(() => {
+    const hasAccepted = localStorage.getItem('feedo_terms_accepted') === 'true';
+    if (!hasAccepted) {
+      setScreen('terms');
+    }
+  }, [setScreen]);
 
   const handleContinue = async (e: React.FormEvent) => {
     e.preventDefault();
