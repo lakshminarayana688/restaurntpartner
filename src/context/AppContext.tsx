@@ -27,7 +27,11 @@ import {
   healthService,
   orderSoundService,
   OrderSoundSettings,
+  loadDocumentsFromStorage,
+  saveDocumentsToStorage,
+  validateRequiredDocuments,
 } from '../services';
+import { getSupabaseClient, isSupabaseConfigured } from '../utils/supabase';
 import { isSupabaseConfigured } from '../utils/supabase';
 
 
@@ -262,6 +266,16 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   // Restaurant data
   const [restaurant, setRestaurant] = useState<RestaurantDetails>(initialRestaurantDetails);
   const [documents, setDocuments] = useState<VerificationDocument[]>(initialDocuments);
+
+  // Restore persisted documents from Supabase Storage / LocalStorage
+  useEffect(() => {
+    const restId = restaurant.id || initialRestaurantDetails.id || 'default';
+    loadDocumentsFromStorage(restId, initialDocuments).then((loaded) => {
+      if (loaded && loaded.length > 0) {
+        setDocuments(loaded);
+      }
+    });
+  }, [restaurant.id]);
   
   // Orders & Menu
   const [orders, setOrders] = useState<Order[]>(initialOrders);
@@ -541,12 +555,36 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
 
   const updateDocument = (id: string, updates: Partial<VerificationDocument>) => {
-    setDocuments(prev => prev.map(doc => doc.id === id ? { ...doc, ...updates } : doc));
+    setDocuments(prev => {
+      const updated = prev.map(doc => doc.id === id ? { ...doc, ...updates } : doc);
+      saveDocumentsToStorage(restaurant.id || initialRestaurantDetails.id || 'default', updated);
+      return updated;
+    });
   };
 
-  const submitDocumentsForVerification = async () => {
-    setDocuments(prev => prev.map(doc => ({ ...doc, status: 'UNDER_REVIEW' })));
+  const submitDocumentsForVerification = async (): Promise<boolean> => {
+    const { isValid, missingNames } = validateRequiredDocuments(documents);
+    if (!isValid) {
+      showToast(`Please upload required documents: ${missingNames.join(', ')}`, 'error');
+      return false;
+    }
+
+    const updated = documents.map(doc => ({ ...doc, status: 'UNDER_REVIEW' as const }));
+    setDocuments(updated);
+    saveDocumentsToStorage(restaurant.id || initialRestaurantDetails.id || 'default', updated);
     setRestaurant(prev => ({ ...prev, regStatus: 'UNDER_REVIEW' }));
+
+    const client = getSupabaseClient();
+    if (client && isSupabaseConfigured() && restaurant.id) {
+      try {
+        await client
+          .from('restaurant_documents')
+          .update({ status: 'UNDER_REVIEW' })
+          .eq('restaurant_id', restaurant.id);
+      } catch (e) {
+        console.warn('Supabase documents update status error:', e);
+      }
+    }
 
     if (!isDemo && restaurant.id) {
       await restaurantService.submitKyc({
@@ -567,6 +605,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
     showToast('Documents submitted for FEEDO verification', 'success');
     setCurrentScreen('verification_status');
+    return true;
   };
 
   const simulateApproval = () => {

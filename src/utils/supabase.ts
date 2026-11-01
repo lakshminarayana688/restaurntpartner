@@ -215,6 +215,23 @@ CREATE TABLE IF NOT EXISTS public.restaurant_kyc (
     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
+-- 6b. RESTAURANT_DOCUMENTS (Statutory KYC Files in Supabase Storage)
+CREATE TABLE IF NOT EXISTS public.restaurant_documents (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    restaurant_id UUID NOT NULL REFERENCES public.restaurants(id) ON DELETE CASCADE,
+    doc_type TEXT NOT NULL,
+    file_name TEXT NOT NULL,
+    file_size TEXT NOT NULL,
+    file_path TEXT NOT NULL,
+    file_url TEXT,
+    mime_type TEXT,
+    status TEXT NOT NULL DEFAULT 'UPLOADED',
+    uploaded_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    UNIQUE(restaurant_id, doc_type)
+);
+
 -- 7. RESTAURANT_BANK_ACCOUNTS
 CREATE TABLE IF NOT EXISTS public.restaurant_bank_accounts (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -360,6 +377,7 @@ ALTER TABLE public.profiles ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.restaurants ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.restaurant_users ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.restaurant_kyc ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.restaurant_documents ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.restaurant_bank_accounts ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.menu_categories ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.menu_items ENABLE ROW LEVEL SECURITY;

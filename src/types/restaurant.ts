@@ -21,6 +21,15 @@ export interface OpeningHour {
   closeTime: string; // e.g. "11:00 PM"
 }
 
+export interface UploadedFileItem {
+  name: string;
+  size: string;
+  url: string;
+  path?: string;
+  mimeType?: string;
+  label?: string; // e.g. 'Kitchen' or 'Facade'
+}
+
 export interface VerificationDocument {
   id: string;
   name: string;
@@ -31,6 +40,9 @@ export interface VerificationDocument {
   fileSize?: string;
   uploadedAt?: string;
   previewUrl?: string;
+  filePath?: string;
+  mimeType?: string;
+  files?: UploadedFileItem[];
 }
 
 export interface RestaurantDetails {
