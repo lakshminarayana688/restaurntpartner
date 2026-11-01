@@ -1,16 +1,25 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useApp } from '../../context/AppContext';
-import { AlertTriangle, X, Moon, Clock } from 'lucide-react';
+import { AlertTriangle, X, Moon, Clock, Check } from 'lucide-react';
 
 export const OfflineModal: React.FC = () => {
   const { isOfflineModalOpen, setIsOfflineModalOpen, updateRestaurant, showToast } = useApp();
+  const [selectedDuration, setSelectedDuration] = useState<'today' | '1hour' | '2hours' | 'indefinite'>('today');
 
   if (!isOfflineModalOpen) return null;
 
   const handleConfirmOffline = () => {
     updateRestaurant({ isOnline: false });
     setIsOfflineModalOpen(false);
-    showToast('Restaurant is now OFFLINE. Customers cannot place new orders.', 'warning');
+    const label =
+      selectedDuration === 'today'
+        ? 'Rest of today'
+        : selectedDuration === '1hour'
+        ? 'For 1 hour'
+        : selectedDuration === '2hours'
+        ? 'For 2 hours'
+        : 'Indefinitely';
+    showToast(`Restaurant is now OFFLINE (${label}). Customers cannot place new orders.`, 'warning');
   };
 
   return (
@@ -43,11 +52,53 @@ export const OfflineModal: React.FC = () => {
         <div className="space-y-2 mb-6">
           <label className="text-xs font-semibold text-slate-600">Turn offline until:</label>
           <div className="grid grid-cols-2 gap-2">
-            <button className="py-2 px-3 text-xs font-medium border border-feedo-500 bg-feedo-50 text-feedo-700 rounded-lg text-left">
-              Rest of today
+            <button
+              type="button"
+              onClick={() => setSelectedDuration('today')}
+              className={`py-2 px-3 text-xs font-medium rounded-xl text-left border transition-all cursor-pointer flex items-center justify-between ${
+                selectedDuration === 'today'
+                  ? 'border-feedo-500 bg-feedo-50 text-feedo-800 font-bold ring-2 ring-feedo-500/20'
+                  : 'border-slate-200 bg-slate-50 text-slate-700 hover:bg-slate-100'
+              }`}
+            >
+              <span>Rest of today</span>
+              {selectedDuration === 'today' && <Check className="w-3.5 h-3.5 text-feedo-600" />}
             </button>
-            <button className="py-2 px-3 text-xs font-medium border border-slate-200 bg-slate-50 text-slate-700 rounded-lg text-left">
-              For 1 hour
+            <button
+              type="button"
+              onClick={() => setSelectedDuration('1hour')}
+              className={`py-2 px-3 text-xs font-medium rounded-xl text-left border transition-all cursor-pointer flex items-center justify-between ${
+                selectedDuration === '1hour'
+                  ? 'border-feedo-500 bg-feedo-50 text-feedo-800 font-bold ring-2 ring-feedo-500/20'
+                  : 'border-slate-200 bg-slate-50 text-slate-700 hover:bg-slate-100'
+              }`}
+            >
+              <span>For 1 hour</span>
+              {selectedDuration === '1hour' && <Check className="w-3.5 h-3.5 text-feedo-600" />}
+            </button>
+            <button
+              type="button"
+              onClick={() => setSelectedDuration('2hours')}
+              className={`py-2 px-3 text-xs font-medium rounded-xl text-left border transition-all cursor-pointer flex items-center justify-between ${
+                selectedDuration === '2hours'
+                  ? 'border-feedo-500 bg-feedo-50 text-feedo-800 font-bold ring-2 ring-feedo-500/20'
+                  : 'border-slate-200 bg-slate-50 text-slate-700 hover:bg-slate-100'
+              }`}
+            >
+              <span>For 2 hours</span>
+              {selectedDuration === '2hours' && <Check className="w-3.5 h-3.5 text-feedo-600" />}
+            </button>
+            <button
+              type="button"
+              onClick={() => setSelectedDuration('indefinite')}
+              className={`py-2 px-3 text-xs font-medium rounded-xl text-left border transition-all cursor-pointer flex items-center justify-between ${
+                selectedDuration === 'indefinite'
+                  ? 'border-feedo-500 bg-feedo-50 text-feedo-800 font-bold ring-2 ring-feedo-500/20'
+                  : 'border-slate-200 bg-slate-50 text-slate-700 hover:bg-slate-100'
+              }`}
+            >
+              <span>Until turned ON</span>
+              {selectedDuration === 'indefinite' && <Check className="w-3.5 h-3.5 text-feedo-600" />}
             </button>
           </div>
         </div>

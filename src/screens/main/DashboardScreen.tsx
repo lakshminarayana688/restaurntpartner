@@ -15,7 +15,9 @@ import {
   Search,
   SlidersHorizontal,
   Heart,
+  Filter,
 } from 'lucide-react';
+import { OrderFilterModal, DashboardFilterOptions } from '../../components/dashboard/OrderFilterModal';
 
 const QUICK_CATEGORIES = ['All', 'New Orders', 'Preparing', 'Ready', 'Completed'];
 
@@ -30,6 +32,19 @@ export const DashboardScreen: React.FC = () => {
 
   const [activeCategory, setActiveCategory] = useState('All');
   const [searchQuery, setSearchQuery] = useState('');
+  const [isFilterModalOpen, setIsFilterModalOpen] = useState(false);
+  const [filterOptions, setFilterOptions] = useState<DashboardFilterOptions>({
+    status: 'ALL',
+    sortBy: 'NEWEST',
+    dietary: 'ALL',
+    paymentMode: 'ALL',
+  });
+
+  const hasActiveFilters =
+    filterOptions.status !== 'ALL' ||
+    filterOptions.sortBy !== 'NEWEST' ||
+    filterOptions.dietary !== 'ALL' ||
+    filterOptions.paymentMode !== 'ALL';
 
   const activeOrders = useMemo(() =>
     orders.filter((o) =>
@@ -41,19 +56,56 @@ export const DashboardScreen: React.FC = () => {
     orders.filter((o) => ['RESTAURANT_REJECTED', 'CUSTOMER_CANCELLED'].includes(o.status)), [orders]);
 
   const filteredOrders = useMemo(() => {
-    let list = activeOrders;
-    if (activeCategory === 'New Orders') list = orders.filter(o => ['PLACED', 'PAYMENT_CONFIRMED'].includes(o.status));
-    else if (activeCategory === 'Preparing') list = orders.filter(o => o.status === 'PREPARING');
-    else if (activeCategory === 'Ready') list = orders.filter(o => o.status === 'READY_FOR_PICKUP');
-    else if (activeCategory === 'Completed') list = deliveredOrders;
+    let list = orders;
+
+    // 1. Status filter (modal filter takes precedence if set, otherwise category pill)
+    if (filterOptions.status !== 'ALL') {
+      if (filterOptions.status === 'NEW') list = list.filter(o => ['PLACED', 'PAYMENT_CONFIRMED'].includes(o.status));
+      else if (filterOptions.status === 'PREPARING') list = list.filter(o => o.status === 'PREPARING');
+      else if (filterOptions.status === 'READY') list = list.filter(o => o.status === 'READY_FOR_PICKUP');
+      else if (filterOptions.status === 'COMPLETED') list = list.filter(o => o.status === 'DELIVERED');
+      else if (filterOptions.status === 'CANCELLED') list = list.filter(o => ['RESTAURANT_REJECTED', 'CUSTOMER_CANCELLED'].includes(o.status));
+    } else {
+      if (activeCategory === 'All') list = activeOrders;
+      else if (activeCategory === 'New Orders') list = list.filter(o => ['PLACED', 'PAYMENT_CONFIRMED'].includes(o.status));
+      else if (activeCategory === 'Preparing') list = list.filter(o => o.status === 'PREPARING');
+      else if (activeCategory === 'Ready') list = list.filter(o => o.status === 'READY_FOR_PICKUP');
+      else if (activeCategory === 'Completed') list = deliveredOrders;
+    }
+
+    // 2. Dietary filter
+    if (filterOptions.dietary === 'VEG') {
+      list = list.filter(o => o.items.every(i => i.isVeg));
+    } else if (filterOptions.dietary === 'NON_VEG') {
+      list = list.filter(o => o.items.some(i => !i.isVeg));
+    }
+
+    // 3. Payment mode filter
+    if (filterOptions.paymentMode === 'ONLINE') {
+      list = list.filter(o => o.paymentStatus !== 'COD' && o.paymentMethod !== 'Cash on Delivery');
+    } else if (filterOptions.paymentMode === 'COD') {
+      list = list.filter(o => o.paymentStatus === 'COD' || o.paymentMethod === 'Cash on Delivery');
+    }
+
+    // 4. Search query
     if (searchQuery.trim()) {
+      const q = searchQuery.toLowerCase();
       list = list.filter(o =>
-        o.id.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        o.items.some(i => i.name.toLowerCase().includes(searchQuery.toLowerCase()))
+        o.id.toLowerCase().includes(q) ||
+        o.items.some(i => i.name.toLowerCase().includes(q)) ||
+        o.customer.name.toLowerCase().includes(q)
       );
     }
+
+    // 5. Sorting
+    if (filterOptions.sortBy === 'PRICE_HIGH') {
+      list = [...list].sort((a, b) => b.total - a.total);
+    } else if (filterOptions.sortBy === 'PRICE_LOW') {
+      list = [...list].sort((a, b) => a.total - b.total);
+    }
+
     return list;
-  }, [activeOrders, deliveredOrders, orders, activeCategory, searchQuery]);
+  }, [orders, activeOrders, deliveredOrders, activeCategory, searchQuery, filterOptions]);
 
   return (
     <div className="min-h-screen bg-[#F8F8F8]">
@@ -69,11 +121,13 @@ export const DashboardScreen: React.FC = () => {
           </div>
           <div className="flex items-center gap-2">
             <button
+              type="button"
               onClick={toggleOnlineStatus}
-              className={`flex items-center gap-1.5 px-3 py-2 rounded-2xl text-xs font-bold transition-all ${
+              title={restaurant.isOnline ? 'Switch kitchen to Offline' : 'Switch kitchen to Online'}
+              className={`flex items-center gap-1.5 px-3 py-2 rounded-2xl text-xs font-bold transition-all cursor-pointer hover:shadow-xs active:scale-95 select-none ${
                 restaurant.isOnline
-                  ? 'bg-emerald-100 text-emerald-700'
-                  : 'bg-rose-100 text-rose-700'
+                  ? 'bg-emerald-100 text-emerald-800 hover:bg-emerald-200'
+                  : 'bg-rose-100 text-rose-800 hover:bg-rose-200'
               }`}
             >
               <span className={`w-2 h-2 rounded-full ${restaurant.isOnline ? 'bg-emerald-500 animate-pulse' : 'bg-rose-500'}`} />
@@ -94,8 +148,17 @@ export const DashboardScreen: React.FC = () => {
               className="flex-1 bg-transparent text-xs text-slate-700 placeholder-slate-400 outline-none"
             />
           </div>
-          <button className="w-10 h-10 flex items-center justify-center bg-[#FFC700] rounded-2xl shadow-sm shadow-amber-200 shrink-0">
+          <button
+            type="button"
+            onClick={() => setIsFilterModalOpen(true)}
+            title="Filter & sort order queue"
+            aria-label="Filter & sort order queue"
+            className="relative w-10 h-10 flex items-center justify-center bg-[#FFC700] hover:bg-[#e6b400] active:scale-95 rounded-2xl shadow-sm shadow-amber-200 shrink-0 transition-all cursor-pointer"
+          >
             <SlidersHorizontal className="w-4 h-4 text-slate-900" />
+            {hasActiveFilters && (
+              <span className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-slate-900 border-2 border-white rounded-full" />
+            )}
           </button>
         </div>
       </div>
@@ -362,6 +425,23 @@ export const DashboardScreen: React.FC = () => {
         </div>
 
       </div>
+
+      {/* ── Filter & Sort Modal ──────────────────────────── */}
+      <OrderFilterModal
+        isOpen={isFilterModalOpen}
+        onClose={() => setIsFilterModalOpen(false)}
+        filters={filterOptions}
+        onChangeFilters={setFilterOptions}
+        onResetFilters={() =>
+          setFilterOptions({
+            status: 'ALL',
+            sortBy: 'NEWEST',
+            dietary: 'ALL',
+            paymentMode: 'ALL',
+          })
+        }
+        matchingCount={filteredOrders.length}
+      />
     </div>
   );
 };
