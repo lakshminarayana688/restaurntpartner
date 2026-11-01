@@ -34,6 +34,7 @@ export const Sidebar: React.FC = () => {
     currentUserRole,
     isMobileDrawerOpen,
     setIsMobileDrawerOpen,
+    setIsSignOutModalOpen,
   } = useApp();
 
   // Prevent background scrolling when navigation drawer is open
@@ -78,7 +79,7 @@ export const Sidebar: React.FC = () => {
   };
 
   const handleLogout = () => {
-    setScreen('login');
+    setIsSignOutModalOpen(true);
     if (isMobileDrawerOpen) {
       setIsMobileDrawerOpen(false);
     }
@@ -194,7 +195,8 @@ export const Sidebar: React.FC = () => {
                 <button
                   type="button"
                   onClick={handleLogout}
-                  title="Log out"
+                  title="Sign Out"
+                  aria-label="Sign Out"
                   className="text-slate-400 hover:text-rose-600 p-1.5 rounded-xl hover:bg-rose-50 transition-colors cursor-pointer"
                 >
                   <LogOut className="w-4 h-4" />

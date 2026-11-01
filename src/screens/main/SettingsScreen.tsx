@@ -20,6 +20,7 @@ export const SettingsScreen: React.FC = () => {
     testOrderSound,
     setScreen,
     showToast,
+    setIsSignOutModalOpen,
   } = useApp();
 
   return (
@@ -223,10 +224,7 @@ export const SettingsScreen: React.FC = () => {
               <p className="text-[11px] text-slate-400 font-mono">Owner Mobile: {restaurant.ownerPhone}</p>
             </div>
             <button
-              onClick={() => {
-                showToast('Logged out of partner session', 'info');
-                setScreen('login');
-              }}
+              onClick={() => setIsSignOutModalOpen(true)}
               className="px-4 py-2 bg-rose-50 text-rose-700 hover:bg-rose-100 font-bold text-xs rounded-xl border border-rose-200 flex items-center gap-1.5 transition-colors cursor-pointer"
             >
               <LogOut className="w-3.5 h-3.5" />

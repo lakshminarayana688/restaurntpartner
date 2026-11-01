@@ -18,10 +18,11 @@ import {
   Sparkles,
   Award,
   ArrowLeft,
+  LogOut,
 } from 'lucide-react';
 
 export const ProfileScreen: React.FC = () => {
-  const { restaurant, updateRestaurant, showToast, setScreen } = useApp();
+  const { restaurant, updateRestaurant, showToast, setScreen, setIsSignOutModalOpen } = useApp();
 
   const [form, setForm] = useState({
     name: restaurant.restaurantName,
@@ -114,6 +115,15 @@ export const ProfileScreen: React.FC = () => {
             className="px-6 py-2.5 bg-gradient-to-r from-feedo-500 to-feedo-600 hover:from-feedo-600 hover:to-feedo-700 text-white font-bold text-xs rounded-xl shadow-md shadow-feedo-500/20 transition-all cursor-pointer"
           >
             Save Changes
+          </button>
+          <button
+            type="button"
+            onClick={() => setIsSignOutModalOpen(true)}
+            className="px-4 py-2.5 bg-rose-50 hover:bg-rose-100 text-rose-700 font-bold text-xs rounded-xl border border-rose-200 flex items-center gap-1.5 transition-colors cursor-pointer"
+            title="Sign Out"
+          >
+            <LogOut className="w-4 h-4" />
+            <span>Sign Out</span>
           </button>
         </div>
       </div>

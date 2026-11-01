@@ -6,6 +6,7 @@ import { Sidebar } from './components/layout/Sidebar';
 import { MobileBottomNav } from './components/layout/MobileBottomNav';
 import { NotificationsDrawer } from './components/layout/NotificationsDrawer';
 import { OfflineModal } from './components/layout/OfflineModal';
+import { SignOutConfirmModal } from './components/common/SignOutConfirmModal';
 
 // Modals
 import { IncomingOrderModal } from './screens/main/IncomingOrderModal';
@@ -177,6 +178,7 @@ const MainAppContent: React.FC = () => {
       <OrderDetailModal />
       <NotificationsDrawer />
       <OfflineModal />
+      <SignOutConfirmModal />
 
       {/* Main Responsive Application */}
       <div className="flex-1">{appView}</div>

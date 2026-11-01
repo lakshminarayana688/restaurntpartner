@@ -26,6 +26,7 @@ import {
   analyticsService,
   healthService,
   orderSoundService,
+  pushNotificationService,
   OrderSoundSettings,
   loadDocumentsFromStorage,
   saveDocumentsToStorage,
@@ -142,6 +143,9 @@ interface AppContextType {
   setIsDatabaseModalOpen: (open: boolean) => void;
   isDownloadModalOpen: boolean;
   setIsDownloadModalOpen: (open: boolean) => void;
+  isSignOutModalOpen: boolean;
+  setIsSignOutModalOpen: (open: boolean) => void;
+  confirmSignOut: () => Promise<void>;
   toggleOnlineStatus: () => void;
   isSupabaseLive: boolean;
   isLoading: boolean;
@@ -297,6 +301,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [isMobileDrawerOpen, setIsMobileDrawerOpen] = useState<boolean>(false);
   const [isDatabaseModalOpen, setIsDatabaseModalOpen] = useState<boolean>(false);
   const [isDownloadModalOpen, setIsDownloadModalOpen] = useState<boolean>(false);
+  const [isSignOutModalOpen, setIsSignOutModalOpen] = useState<boolean>(false);
   const [isSupabaseLive, setIsSupabaseLive] = useState<boolean>(isSupabaseConfigured());
   const [isLoading, setIsLoading] = useState<boolean>(false);
 
@@ -1253,6 +1258,21 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     showToast('Demo data reset to default state', 'info');
   };
 
+  const confirmSignOut = async () => {
+    try {
+      await authService.logout();
+      if (restaurant?.id) {
+        await pushNotificationService.removeTokenOnLogout(restaurant.id);
+      }
+    } catch (err) {
+      console.warn('Error during sign out:', err);
+    } finally {
+      setIsSignOutModalOpen(false);
+      showToast('Signed out successfully', 'info');
+      setCurrentScreen('login');
+    }
+  };
+
   return (
     <AppContext.Provider
       value={{
@@ -1298,6 +1318,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         setIsDatabaseModalOpen,
         isDownloadModalOpen,
         setIsDownloadModalOpen,
+        isSignOutModalOpen,
+        setIsSignOutModalOpen,
+        confirmSignOut,
         toggleOnlineStatus,
         isSupabaseLive,
         isLoading,
