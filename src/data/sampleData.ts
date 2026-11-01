@@ -9,9 +9,9 @@ export const initialDocuments: VerificationDocument[] = [
     status: 'NOT_UPLOADED',
   },
   {
-    id: 'doc-pan',
-    name: 'PAN Card',
-    description: 'Business entity or Proprietor Permanent Account Number card',
+    id: 'doc-aadhaar',
+    name: 'Aadhaar Card',
+    description: 'Proprietor or Authorized Signatory 12-digit UIDAI Aadhaar Card',
     isRequired: true,
     status: 'NOT_UPLOADED',
   },
@@ -24,8 +24,8 @@ export const initialDocuments: VerificationDocument[] = [
   },
   {
     id: 'doc-bank',
-    name: 'Bank Proof / Cancelled Cheque',
-    description: 'Bank passbook copy or cancelled cheque for daily settlements',
+    name: 'Bank Passbook',
+    description: 'First page copy of bank passbook with account number, name & IFSC',
     isRequired: true,
     status: 'NOT_UPLOADED',
   },
@@ -63,6 +63,7 @@ export const initialRestaurantDetails: RestaurantDetails = {
   
   fssaiNumber: '21223004000891',
   panNumber: 'AABCL9921D',
+  aadhaarNumber: 'XXXX-XXXX-9921',
   gstNumber: '29AABCL9921D1Z5',
   bankAccount: '•••• •••• •••• 9921',
   bankName: 'HDFC Bank Ltd',
@@ -75,7 +76,7 @@ export const initialRestaurantDetails: RestaurantDetails = {
   totalReviews: 1248,
   
   isOnline: true,
-  autoAcceptOrders: false,
+  autoAcceptOrders: true,
   newOrderSound: true,
   regStatus: 'APPROVED', // Default approved so demo opens ready, but can be switched with Demo Controller!
   commissionRate: 18,

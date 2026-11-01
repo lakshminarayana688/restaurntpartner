@@ -3,87 +3,75 @@ import { useApp } from '../../context/AppContext';
 import { VegIndicator } from '../../components/common/VegIndicator';
 import {
   Bell,
-  Clock,
   MapPin,
   AlertTriangle,
   X,
   CheckCircle2,
-  FileText,
   Volume2,
   VolumeX,
+  Utensils,
+  Eye,
 } from 'lucide-react';
 
 export const IncomingOrderModal: React.FC = () => {
-  const { incomingOrder, acceptOrder, rejectOrder, stopOrderSound } = useApp();
-  const [countdown, setCountdown] = useState(29);
-  const [showRejectModal, setShowRejectModal] = useState(false);
+  const {
+    incomingOrder,
+    setIncomingOrder,
+    setSelectedOrder,
+    startPreparingOrder,
+    stopOrderSound,
+    setScreen,
+  } = useApp();
   const [isMuted, setIsMuted] = useState(false);
-  const [selectedReason, setSelectedReason] = useState('Restaurant Busy');
-
-  const rejectReasons = [
-    'Restaurant Busy',
-    'Item Unavailable / Out of Stock',
-    'Kitchen Closing Soon',
-    'Technical Issue',
-    'Other Operational Reason',
-  ];
 
   useEffect(() => {
-    if (!incomingOrder) {
-      setCountdown(29);
-      return;
-    }
-
-    const timer = setInterval(() => {
-      setCountdown((prev) => {
-        if (prev <= 1) {
-          clearInterval(timer);
-          stopOrderSound();
-          return 0;
-        }
-        return prev - 1;
-      });
-    }, 1000);
-
     return () => {
-      clearInterval(timer);
       stopOrderSound();
     };
   }, [incomingOrder, stopOrderSound]);
 
-
   if (!incomingOrder) return null;
 
-  const handleAccept = () => {
-    acceptOrder(incomingOrder.id);
+  const handleDismiss = () => {
+    stopOrderSound();
+    setIncomingOrder(null);
   };
 
-  const handleConfirmReject = () => {
-    rejectOrder(incomingOrder.id, selectedReason);
-    setShowRejectModal(false);
+  const handleViewOrder = () => {
+    stopOrderSound();
+    setSelectedOrder(incomingOrder);
+    setIncomingOrder(null);
+    setScreen('orders');
+  };
+
+  const handleStartCooking = () => {
+    stopOrderSound();
+    startPreparingOrder(incomingOrder.id);
+    setSelectedOrder({ ...incomingOrder, status: 'PREPARING' });
+    setIncomingOrder(null);
   };
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-6 bg-slate-950/80 backdrop-blur-md animate-in fade-in">
       <div className="relative w-full max-w-lg bg-white rounded-3xl shadow-2xl border-2 border-feedo-500 overflow-hidden flex flex-col incoming-order-card">
-        {/* Urgent Header */}
+        {/* Header - Order Assigned */}
         <div className="bg-gradient-to-r from-feedo-600 via-feedo-500 to-amber-500 p-4 sm:p-5 text-white flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div className="w-12 h-12 rounded-2xl bg-white/20 backdrop-blur-xs flex items-center justify-center animate-bounce">
-              <Bell className="w-6 h-6 text-white" />
+              <CheckCircle2 className="w-6 h-6 text-white" />
             </div>
             <div>
               <div className="flex items-center gap-2">
                 <span className="text-xs font-black tracking-wider uppercase bg-white/20 px-2 py-0.5 rounded-full">
-                  NEW ORDER
+                  ASSIGNED TO KITCHEN
                 </span>
                 <span className="text-xs font-mono font-bold">#{incomingOrder.id}</span>
               </div>
-              <h2 className="text-lg font-black mt-0.5">Incoming Customer Order</h2>
+              <h2 className="text-lg font-black mt-0.5">Order Assigned to Restaurant</h2>
             </div>
           </div>
 
-          {/* Countdown & Sound Control */}
+          {/* Sound Control & Close */}
           <div className="flex items-center gap-2">
             <button
               type="button"
@@ -111,14 +99,14 @@ export const IncomingOrderModal: React.FC = () => {
               )}
             </button>
 
-            {/* Countdown Ring */}
-            <div className="flex flex-col items-center bg-black/30 backdrop-blur-md px-3 py-1.5 rounded-2xl border border-white/20">
-              <div className="flex items-center gap-1 text-amber-300">
-                <Clock className="w-3.5 h-3.5" />
-                <span className="text-base font-mono font-black">{countdown}s</span>
-              </div>
-              <span className="text-[9px] text-white/80">Auto-reject</span>
-            </div>
+            <button
+              type="button"
+              onClick={handleDismiss}
+              className="p-2 rounded-xl bg-white/20 hover:bg-white/30 backdrop-blur-md border border-white/20 text-white transition-all cursor-pointer"
+              title="Close Notification"
+            >
+              <X className="w-4 h-4" />
+            </button>
           </div>
         </div>
 
@@ -187,78 +175,27 @@ export const IncomingOrderModal: React.FC = () => {
           </div>
         </div>
 
-        {/* Action Buttons */}
+        {/* Action Buttons - Assigned with No Accept or Request required */}
         <div className="p-4 bg-slate-50 border-t border-slate-200 flex items-center gap-3">
           <button
             type="button"
-            onClick={() => setShowRejectModal(true)}
-            className="flex-1 py-3.5 px-4 rounded-2xl border-2 border-rose-300 bg-rose-50 hover:bg-rose-100 text-rose-700 font-bold text-xs uppercase tracking-wider transition-all cursor-pointer"
+            onClick={handleViewOrder}
+            className="flex-1 py-3.5 px-4 rounded-2xl border border-slate-200 bg-white hover:bg-slate-100 text-slate-700 font-bold text-xs uppercase tracking-wider shadow-2xs flex items-center justify-center gap-2 transition-all cursor-pointer"
           >
-            REJECT ORDER
+            <Eye className="w-4 h-4 text-slate-500" />
+            <span>View in Queue</span>
           </button>
 
           <button
             type="button"
-            onClick={handleAccept}
+            onClick={handleStartCooking}
             className="flex-[2] py-3.5 px-4 rounded-2xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white font-black text-sm uppercase tracking-wider shadow-lg shadow-emerald-600/30 flex items-center justify-center gap-2 transition-all cursor-pointer"
           >
-            <CheckCircle2 className="w-5 h-5" />
-            <span>ACCEPT ORDER</span>
+            <Utensils className="w-5 h-5" />
+            <span>START COOKING</span>
           </button>
         </div>
       </div>
-
-      {/* Reject Reason Modal */}
-      {showRejectModal && (
-        <div className="fixed inset-0 z-60 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-xs">
-          <div className="relative w-full max-w-sm bg-white rounded-3xl shadow-2xl p-6 border border-slate-200">
-            <h3 className="text-base font-bold text-slate-900 mb-1">Select Rejection Reason</h3>
-            <p className="text-xs text-slate-500 mb-4">
-              This will notify the customer and cancel Order #{incomingOrder.id}.
-            </p>
-
-            <div className="space-y-2 mb-6">
-              {rejectReasons.map((reason) => (
-                <label
-                  key={reason}
-                  onClick={() => setSelectedReason(reason)}
-                  className={`flex items-center gap-3 p-3 rounded-xl border text-xs font-semibold cursor-pointer transition-all ${
-                    selectedReason === reason
-                      ? 'border-rose-500 bg-rose-50 text-rose-900'
-                      : 'border-slate-200 bg-slate-50 text-slate-700 hover:bg-slate-100'
-                  }`}
-                >
-                  <input
-                    type="radio"
-                    name="rejectReason"
-                    checked={selectedReason === reason}
-                    onChange={() => setSelectedReason(reason)}
-                    className="text-rose-600 focus:ring-rose-500"
-                  />
-                  <span>{reason}</span>
-                </label>
-              ))}
-            </div>
-
-            <div className="flex items-center justify-end gap-2">
-              <button
-                type="button"
-                onClick={() => setShowRejectModal(false)}
-                className="px-4 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-100 rounded-xl"
-              >
-                Back
-              </button>
-              <button
-                type="button"
-                onClick={handleConfirmReject}
-                className="px-5 py-2 text-xs font-bold text-white bg-rose-600 hover:bg-rose-700 rounded-xl shadow-md shadow-rose-600/20"
-              >
-                Confirm Rejection
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 };

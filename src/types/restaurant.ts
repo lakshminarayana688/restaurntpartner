@@ -63,6 +63,7 @@ export interface RestaurantDetails {
   
   fssaiNumber: string;
   panNumber: string;
+  aadhaarNumber?: string;
   gstNumber?: string;
   bankAccount: string;
   bankName: string;

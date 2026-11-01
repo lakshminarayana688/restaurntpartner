@@ -262,8 +262,8 @@ export async function loadDocumentsFromStorage(
               };
             }
             // fallback to local stored
-            const localMatch = loaded?.find((l) => l.id === doc.id);
-            return localMatch || doc;
+            const localMatch = loaded?.find((l) => l.id === doc.id || (doc.id === 'doc-aadhaar' && l.id === 'doc-pan'));
+            return localMatch ? { ...doc, ...localMatch, id: doc.id, name: doc.name, description: doc.description } : doc;
           });
         }
       } catch (e) {
@@ -273,8 +273,8 @@ export async function loadDocumentsFromStorage(
 
     if (loaded && Array.isArray(loaded) && loaded.length > 0) {
       return defaultDocs.map((doc) => {
-        const match = loaded!.find((l) => l.id === doc.id);
-        return match ? { ...doc, ...match } : doc;
+        const match = loaded!.find((l) => l.id === doc.id || (doc.id === 'doc-aadhaar' && l.id === 'doc-pan'));
+        return match ? { ...doc, ...match, id: doc.id, name: doc.name, description: doc.description } : doc;
       });
     }
   } catch (e) {

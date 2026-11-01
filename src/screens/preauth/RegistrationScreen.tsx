@@ -35,6 +35,7 @@ export const RegistrationScreen: React.FC = () => {
 
     fssaiNumber: restaurant.fssaiNumber || '21223004000891',
     panNumber: restaurant.panNumber || 'AABCL9921D',
+    aadhaarNumber: restaurant.aadhaarNumber || '5642 9921 4430',
     gstNumber: restaurant.gstNumber || '29AABCL9921D1Z5',
     bankAccount: restaurant.bankAccount || '5010023489921',
     bankName: restaurant.bankName || 'HDFC Bank Ltd',
@@ -90,7 +91,7 @@ export const RegistrationScreen: React.FC = () => {
       }
       setStep(3);
     } else if (step === 3) {
-      if (!form.fssaiNumber || !form.panNumber || !form.bankAccount || !form.ifscCode) {
+      if (!form.fssaiNumber || (!form.aadhaarNumber && !form.panNumber) || !form.bankAccount || !form.ifscCode) {
         showToast('Please fill all business & bank details', 'error');
         return;
       }
@@ -364,15 +365,15 @@ export const RegistrationScreen: React.FC = () => {
 
                 <div>
                   <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
-                    PAN Number *
+                    12-digit Aadhaar Number *
                   </label>
                   <input
                     type="text"
                     required
-                    maxLength={10}
-                    value={form.panNumber}
-                    onChange={(e) => setForm({ ...form, panNumber: e.target.value.toUpperCase() })}
-                    placeholder="AABCL9921D"
+                    maxLength={14}
+                    value={form.aadhaarNumber}
+                    onChange={(e) => setForm({ ...form, aadhaarNumber: e.target.value })}
+                    placeholder="1234 5678 9012"
                     className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm font-mono font-bold text-slate-900 focus:bg-white focus:border-feedo-500 focus:outline-hidden transition-all"
                   />
                 </div>

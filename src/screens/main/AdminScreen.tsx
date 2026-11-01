@@ -271,7 +271,7 @@ export const AdminScreen: React.FC = () => {
                   Merchant Document Verification & Government IDs
                 </h2>
                 <p className="text-xs text-slate-500 mt-0.5">
-                  Verify FSSAI licensing, PAN card, GST registration, bank proof, and premise photos.
+                  Verify FSSAI licensing, Aadhaar card, GST registration, bank passbook, and premise photos.
                 </p>
               </div>
 

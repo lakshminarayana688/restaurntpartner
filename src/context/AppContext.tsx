@@ -453,15 +453,17 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           total: Number(newOrderRow.total_amount) || 348,
           paymentStatus: (newOrderRow.payment_status || 'PAID') as PaymentStatus,
           paymentMethod: newOrderRow.payment_method || 'UPI',
-          status: (newOrderRow.status || 'CREATED') as OrderStatus,
+          status: 'RESTAURANT_ACCEPTED',
           specialInstructions: newOrderRow.special_instructions || '',
           pickupCode: newOrderRow.pickup_code || Math.floor(1000 + Math.random() * 9000).toString(),
           createdAt: 'Just now',
+          acceptedAt: 'Just now',
           prepMinutes: newOrderRow.prep_minutes || 18,
           prepTargetMinutes: 20,
           packagingDone: false,
           timeline: [
             { status: 'CREATED', title: 'Order Placed', description: 'Customer created order in database', time: 'Just now', completed: true },
+            { status: 'RESTAURANT_ACCEPTED', title: 'Order Assigned', description: 'Order assigned directly to restaurant', time: 'Just now', completed: true },
           ],
         };
 
@@ -514,15 +516,17 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
               total: Number(updatedRow.total_amount) || 348,
               paymentStatus: (updatedRow.payment_status || 'PAID') as PaymentStatus,
               paymentMethod: updatedRow.payment_method || 'UPI',
-              status: (updatedRow.status || 'CREATED') as OrderStatus,
+              status: 'RESTAURANT_ACCEPTED',
               specialInstructions: updatedRow.special_instructions || '',
               pickupCode: updatedRow.pickup_code || Math.floor(1000 + Math.random() * 9000).toString(),
               createdAt: 'Just now',
+              acceptedAt: 'Just now',
               prepMinutes: updatedRow.prep_minutes || 18,
               prepTargetMinutes: 20,
               packagingDone: false,
               timeline: [
-                { status: 'CREATED', title: 'Order Assigned', description: 'Order assigned to restaurant in database', time: 'Just now', completed: true },
+                { status: 'CREATED', title: 'Order Placed', description: 'Order created', time: 'Just now', completed: true },
+                { status: 'RESTAURANT_ACCEPTED', title: 'Order Assigned', description: 'Order assigned directly to restaurant in database', time: 'Just now', completed: true },
               ],
             };
 
@@ -700,16 +704,18 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       total: 470,
       paymentStatus: 'PAID',
       paymentMethod: 'UPI (Google Pay)',
-      status: 'PAYMENT_CONFIRMED',
+      status: 'RESTAURANT_ACCEPTED',
       specialInstructions: 'Less spicy, please pack extra spoons and napkins.',
       pickupCode: '7284',
       createdAt: 'Just now',
+      acceptedAt: 'Just now',
       prepMinutes: 18,
       prepTargetMinutes: 20,
       packagingDone: false,
       timeline: [
         { status: 'CREATED', title: 'Order Placed', description: 'Customer placed order with online payment', time: 'Just now', completed: true },
         { status: 'PAYMENT_CONFIRMED', title: 'Payment Confirmed', description: 'Paid ₹470 via UPI', time: 'Just now', completed: true },
+        { status: 'RESTAURANT_ACCEPTED', title: 'Order Assigned', description: 'Order assigned directly to restaurant', time: 'Just now', completed: true },
       ],
     };
 

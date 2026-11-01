@@ -279,7 +279,7 @@ export const PermissionsScreen: React.FC = () => {
       name: 'Photos & Media Storage',
       category: 'Menu & Cheque Uploads',
       icon: Image,
-      description: 'Enables selecting high-resolution dish photographs, digital menu files, and bank proof documents from device storage.',
+      description: 'Enables selecting high-resolution dish photographs, digital menu files, and bank passbook documents from device storage.',
       status: photosStatus,
       isRequired: true,
       onEnable: requestPhotosPermission,

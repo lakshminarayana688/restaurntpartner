@@ -104,11 +104,11 @@ export const OrderDetailModal: React.FC = () => {
         {/* Modal Content */}
         <div className="flex-1 overflow-y-auto p-5 sm:p-6 space-y-6">
           {/* 1. STATUS LIFECYCLE ACTION BANNER */}
-          {selectedOrder.status === 'RESTAURANT_ACCEPTED' && (
+          {(selectedOrder.status === 'RESTAURANT_ACCEPTED' || selectedOrder.status === 'ACCEPTED') && (
             <div className="p-4 bg-blue-50 border border-blue-200 rounded-2xl flex flex-col sm:flex-row sm:items-center justify-between gap-3">
               <div>
-                <h4 className="text-sm font-bold text-blue-900">Order Accepted by Kitchen</h4>
-                <p className="text-xs text-blue-700">Click start preparing to initiate kitchen countdown.</p>
+                <h4 className="text-sm font-bold text-blue-900">Order Assigned to Kitchen</h4>
+                <p className="text-xs text-blue-700">Order assigned directly to your restaurant. Click start preparing to initiate kitchen countdown.</p>
               </div>
               <button
                 onClick={() => startPreparingOrder(selectedOrder.id)}

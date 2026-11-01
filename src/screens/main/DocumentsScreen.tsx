@@ -58,7 +58,7 @@ export const DocumentsScreen: React.FC = () => {
   const timeline = [
     { title: 'FSSAI License 21223004000891 Verified', time: '18 Sep 2026, 11:20 AM', status: 'Approved' },
     { title: 'GST Certificate 29AABCL9921D1Z5 Verified', time: '17 Sep 2026, 03:45 PM', status: 'Approved' },
-    { title: 'Bank Cancelled Cheque Cleared for Settlements', time: '16 Sep 2026, 09:30 AM', status: 'Approved' },
+    { title: 'Bank Passbook Cleared for Settlements', time: '16 Sep 2026, 09:30 AM', status: 'Approved' },
     { title: 'Initial Document Bundle Submitted', time: '15 Sep 2026, 02:10 PM', status: 'Submitted' },
   ];
 

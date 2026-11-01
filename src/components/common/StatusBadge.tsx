@@ -17,10 +17,11 @@ export const StatusBadge: React.FC<StatusBadgeProps> = ({ status, size = 'md' })
           label: 'New Order',
         };
       case 'RESTAURANT_ACCEPTED':
+      case 'ACCEPTED':
         return {
           bg: 'bg-blue-50 text-blue-700 border-blue-200',
           dot: 'bg-blue-500',
-          label: 'Accepted',
+          label: 'Assigned',
         };
       case 'PREPARING':
         return {

@@ -48,7 +48,7 @@ export const VerificationStatusScreen: React.FC = () => {
             </div>
             <div>
               <h4 className="text-xs font-bold text-slate-900">Documents Submitted</h4>
-              <p className="text-[11px] text-slate-500">FSSAI, PAN, Bank Proof uploaded</p>
+              <p className="text-[11px] text-slate-500">FSSAI, Aadhaar, Bank Passbook uploaded</p>
             </div>
           </div>
 
