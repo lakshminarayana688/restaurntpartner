@@ -20,6 +20,9 @@ import {
   PackageCheck,
   CheckCheck,
   ArrowRight,
+  Copy,
+  Eye,
+  EyeOff,
 } from 'lucide-react';
 import { soundEffects } from '../../utils/audio';
 import { FeedoDispatchAgentModal } from '../../components/chat/FeedoDispatchAgentModal';
@@ -38,10 +41,12 @@ export const OrderDetailModal: React.FC = () => {
     restaurant,
     isPrototypeMode,
     currentUserRole,
+    showToast,
   } = useApp();
 
   const [verifyMode, setVerifyMode] = useState<'OTP' | 'QR'>('OTP');
   const [typedOtp, setTypedOtp] = useState('');
+  const [showCode, setShowCode] = useState(true);
   const [packedItems, setPackedItems] = useState<Record<string, boolean>>({});
   const [isAiSupportOpen, setIsAiSupportOpen] = useState(false);
 
@@ -51,9 +56,19 @@ export const OrderDetailModal: React.FC = () => {
     setPackedItems((prev) => ({ ...prev, [itemId]: !prev[itemId] }));
   };
 
+  const handleCopyCode = () => {
+    if (!selectedOrder?.pickupCode) return;
+    navigator.clipboard.writeText(selectedOrder.pickupCode);
+    showToast(`Pickup code ${selectedOrder.pickupCode} copied! Share with delivery partner.`, 'success');
+  };
+
   const handleVerifyOtpSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    verifyPickup(selectedOrder.id, typedOtp || selectedOrder.pickupCode);
+    if (!typedOtp || typedOtp.trim().length !== 4) {
+      showToast('INVALID PICKUP CODE: Please enter the 4-digit code.', 'error');
+      return;
+    }
+    verifyPickup(selectedOrder.id, typedOtp.trim());
   };
 
   const isPreparing = selectedOrder.status === 'PREPARING';
@@ -155,12 +170,43 @@ export const OrderDetailModal: React.FC = () => {
                   <h4 className="text-sm font-bold text-emerald-900">Food Ready at Dispatch Counter</h4>
                 </div>
                 <span className="text-xs font-bold text-emerald-700 bg-emerald-100 px-2.5 py-0.5 rounded-full">
-                  Waiting for Rider
+                  READY FOR PICKUP
                 </span>
               </div>
               <p className="text-xs text-emerald-800">
-                Package is on shelf. Delivery partner {selectedOrder.rider?.name || 'Arun Kumar'} will verify OTP upon arrival.
+                Package is on the pickup counter. Communicate the unique 4-digit code to delivery partner {selectedOrder.rider?.name || 'Arun Kumar'} only after they arrive at the counter.
               </p>
+
+              {/* Order Specific Pickup Code Box */}
+              <div className="bg-white p-3.5 rounded-xl border border-emerald-200 shadow-xs flex items-center justify-between gap-3">
+                <div>
+                  <div className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">
+                    Unique Pickup Code
+                  </div>
+                  <div className="flex items-center gap-2 mt-0.5">
+                    <span className="text-2xl font-black font-mono tracking-widest text-emerald-800">
+                      {showCode ? (selectedOrder.pickupCode || '----') : '••••'}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => setShowCode(!showCode)}
+                      className="p-1 text-slate-400 hover:text-slate-600 rounded cursor-pointer"
+                      title={showCode ? 'Hide Code' : 'Reveal Code'}
+                    >
+                      {showCode ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                    </button>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={handleCopyCode}
+                  className="px-3 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-xl flex items-center gap-1.5 transition-colors cursor-pointer"
+                >
+                  <Copy className="w-3.5 h-3.5" />
+                  <span>Share / Copy Code</span>
+                </button>
+              </div>
+
               {!selectedOrder.riderArrivedAt && isPrototypeMode && (
                 <button
                   onClick={() => markRiderArrived(selectedOrder.id)}
@@ -223,12 +269,32 @@ export const OrderDetailModal: React.FC = () => {
 
                   {verifyMode === 'OTP' ? (
                     <div className="text-center py-3 bg-amber-50 rounded-2xl border border-amber-200">
-                      <span className="text-[11px] text-amber-800 uppercase tracking-wider block font-semibold mb-1">
-                        Secure 4-Digit Pickup Code
-                      </span>
-                      <span className="text-3xl sm:text-4xl font-black font-mono tracking-widest text-slate-900">
-                        {selectedOrder.pickupCode}
-                      </span>
+                      <div className="flex items-center justify-center gap-2 mb-1">
+                        <span className="text-[11px] text-amber-800 uppercase tracking-wider font-semibold">
+                          Secure 4-Digit Pickup Code
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => setShowCode(!showCode)}
+                          className="text-slate-400 hover:text-slate-600 cursor-pointer"
+                          title={showCode ? 'Hide Code' : 'Reveal Code'}
+                        >
+                          {showCode ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
+                        </button>
+                      </div>
+                      <div className="flex items-center justify-center gap-3">
+                        <span className="text-3xl sm:text-4xl font-black font-mono tracking-widest text-slate-900">
+                          {showCode ? (selectedOrder.pickupCode || '----') : '••••'}
+                        </span>
+                        <button
+                          type="button"
+                          onClick={handleCopyCode}
+                          className="p-1.5 text-slate-500 hover:text-indigo-600 rounded-lg hover:bg-white transition-colors cursor-pointer"
+                          title="Share / Copy Code"
+                        >
+                          <Copy className="w-4 h-4" />
+                        </button>
+                      </div>
                     </div>
                   ) : (
                     <div className="flex flex-col items-center justify-center p-3 bg-slate-50 rounded-2xl border border-slate-200">
@@ -239,23 +305,22 @@ export const OrderDetailModal: React.FC = () => {
                     </div>
                   )}
 
-                  <div className="flex items-center gap-2 pt-2">
+                  <form onSubmit={handleVerifyOtpSubmit} className="flex items-center gap-2 pt-2">
                     <input
                       type="text"
                       maxLength={4}
-                      placeholder="Enter / Confirm OTP"
+                      placeholder="Enter 4-digit code"
                       value={typedOtp}
                       onChange={(e) => setTypedOtp(e.target.value)}
                       className="flex-1 px-3 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-xs font-mono font-bold text-center text-slate-900 tracking-widest"
                     />
                     <button
-                      type="button"
-                      onClick={() => verifyPickup(selectedOrder.id, typedOtp || selectedOrder.pickupCode)}
+                      type="submit"
                       className="px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold rounded-xl shadow transition-colors cursor-pointer"
                     >
                       VERIFY & HANDOVER
                     </button>
-                  </div>
+                  </form>
                 </div>
               ) : (
                 <div className="space-y-3">

@@ -2,7 +2,7 @@
 import { isDemoMode } from './config';
 import { ApiResponse, createSuccessResponse, createErrorResponse } from './types';
 import { DeliveryPartner } from '../types/order';
-import { invokeEdgeFunction } from '../utils/supabase';
+import { invokeEdgeFunction, isSupabaseConfigured } from '../utils/supabase';
 
 export const deliveryService = {
   /**
@@ -51,12 +51,19 @@ export const deliveryService = {
   async verifyPickupCode(
     orderId: string,
     pickupCode: string,
-    restaurantId?: string
+    restaurantId?: string,
+    expectedCode?: string
   ): Promise<ApiResponse<boolean>> {
-    if (isDemoMode()) {
-      const valid = pickupCode.trim() === '7284';
+    const cleanEntered = (pickupCode || '').trim();
+    if (!cleanEntered || cleanEntered.length !== 4) {
+      return createErrorResponse('BAD_REQUEST', 'INVALID PICKUP CODE: Must be a 4-digit numeric code');
+    }
+
+    if (isDemoMode() || !isSupabaseConfigured()) {
+      const cleanExpected = (expectedCode || '7284').trim();
+      const valid = cleanEntered === cleanExpected;
       if (!valid) {
-        return createErrorResponse('BAD_REQUEST', 'Invalid 4-digit pickup code');
+        return createErrorResponse('BAD_REQUEST', 'INVALID PICKUP CODE: Code does not match this order');
       }
       return createSuccessResponse(true);
     }

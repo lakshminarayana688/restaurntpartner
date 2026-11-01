@@ -32,6 +32,7 @@ import {
   validateRequiredDocuments,
 } from '../services';
 import { getSupabaseClient, isSupabaseConfigured } from '../utils/supabase';
+import { generateUniquePickupCode } from '../utils/orderUtils';
 
 
 export type ScreenName =
@@ -455,7 +456,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           paymentMethod: newOrderRow.payment_method || 'UPI',
           status: 'RESTAURANT_ACCEPTED',
           specialInstructions: newOrderRow.special_instructions || '',
-          pickupCode: newOrderRow.pickup_code || Math.floor(1000 + Math.random() * 9000).toString(),
+          pickupCode: newOrderRow.pickup_code || generateUniquePickupCode(orders),
           createdAt: 'Just now',
           acceptedAt: 'Just now',
           prepMinutes: newOrderRow.prep_minutes || 18,
@@ -518,7 +519,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
               paymentMethod: updatedRow.payment_method || 'UPI',
               status: 'RESTAURANT_ACCEPTED',
               specialInstructions: updatedRow.special_instructions || '',
-              pickupCode: updatedRow.pickup_code || Math.floor(1000 + Math.random() * 9000).toString(),
+              pickupCode: updatedRow.pickup_code || generateUniquePickupCode(orders),
               createdAt: 'Just now',
               acceptedAt: 'Just now',
               prepMinutes: updatedRow.prep_minutes || 18,
@@ -706,7 +707,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       paymentMethod: 'UPI (Google Pay)',
       status: 'RESTAURANT_ACCEPTED',
       specialInstructions: 'Less spicy, please pack extra spoons and napkins.',
-      pickupCode: '7284',
+      pickupCode: generateUniquePickupCode(orders),
       createdAt: 'Just now',
       acceptedAt: 'Just now',
       prepMinutes: 18,
@@ -914,21 +915,32 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     const order = orders.find(o => o.id === orderId);
     if (!order) return false;
 
-    const isValid = deliveryService.verifyPickupCode(order.pickupCode, enteredCode || order.pickupCode);
-    if (!isValid) {
-      showToast('Incorrect Pickup OTP. Please check rider screen.', 'error');
+    const cleanEntered = (enteredCode || '').trim();
+    const cleanExpected = (order.pickupCode || '').trim();
+
+    if (!cleanEntered) {
+      showToast('INVALID PICKUP CODE: Please enter the 4-digit code.', 'error');
       return false;
     }
+
+    if (cleanEntered.length !== 4 || cleanEntered !== cleanExpected) {
+      showToast('INVALID PICKUP CODE. Please verify with delivery partner.', 'error');
+      return false;
+    }
+
+    const nowTime = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 
     setOrders(prev => prev.map(o => {
       if (o.id === orderId) {
         const updated: Order = {
           ...o,
-          deliveryState: 'PICKUP_VERIFIED',
-          status: 'PICKUP_VERIFIED',
+          status: 'PICKED_UP',
+          deliveryState: 'HANDOVER_COMPLETED',
+          pickedUpAt: nowTime,
           timeline: [
             ...o.timeline,
-            { status: 'PICKUP_VERIFIED', title: 'Pickup Verified', description: `Code ${o.pickupCode} verified successfully`, time: 'Just now', completed: true }
+            { status: 'PICKUP_VERIFIED', title: 'Pickup Code Verified', description: `4-digit code ${o.pickupCode} verified successfully`, time: nowTime, completed: true },
+            { status: 'PICKED_UP', title: 'Order Picked Up', description: 'Order handed over to delivery partner', time: nowTime, completed: true }
           ]
         };
         if (selectedOrder?.id === orderId) setSelectedOrder(updated);
@@ -937,8 +949,13 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       return o;
     }));
 
+    // Dispatch background sync to backend & Edge functions
+    deliveryService.verifyPickupCode(orderId, cleanEntered, restaurant.id, cleanExpected).catch(() => {});
+    orderService.updateOrderStatus(orderId, restaurant.id || '', 'PICKED_UP', cleanEntered).catch(() => {});
+
     soundEffects.playSuccessHandoverTone();
-    showToast(`Pickup OTP verified for Order #${orderId}! Ready for handover.`, 'success');
+    showToast(`✓ Pickup code verified for Order #${orderId}! Status updated to Picked Up.`, 'success');
+    addNotification('Order Picked Up', `Delivery partner verified code and picked up Order #${orderId}`, 'RIDER');
     return true;
   };
 
