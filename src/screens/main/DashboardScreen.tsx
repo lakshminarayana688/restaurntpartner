@@ -350,6 +350,17 @@ export const DashboardScreen: React.FC = () => {
           ))}
         </div>
 
+        {/* ── FEEDO Promise Footer Banner ─────────────────── */}
+        <div className="pt-2">
+          <div className="w-full rounded-3xl overflow-hidden shadow-md">
+            <img
+              src="/feedo-footer.svg?v=2"
+              alt="FEEDO Promise - Deliver Smarter • Earn Clearly"
+              className="w-full h-auto block"
+            />
+          </div>
+        </div>
+
       </div>
     </div>
   );
