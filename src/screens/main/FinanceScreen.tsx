@@ -11,6 +11,7 @@ import {
   Clock,
   Search,
   ArrowUpRight,
+  ArrowLeft,
   Receipt,
   FileSpreadsheet,
 } from 'lucide-react';
@@ -91,22 +92,33 @@ export const FinanceScreen: React.FC = () => {
           1. HEADER SECTION
       ========================================================= */}
       <header className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-200/80 pb-6">
-        <div>
-          <div className="flex items-center gap-2 mb-1.5 flex-wrap">
-            <span className="text-xs font-mono font-bold bg-slate-100 text-slate-700 px-2.5 py-0.5 rounded-lg border border-slate-200/80">
-              Merchant ID: FD-BLR-{bankLast4}
-            </span>
-            <span className="text-xs text-emerald-700 bg-emerald-50 border border-emerald-200/80 px-2.5 py-0.5 rounded-full font-semibold flex items-center gap-1">
-              <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
-              Direct Bank Settlement Active
-            </span>
+        <div className="flex items-start gap-3">
+          <button
+            type="button"
+            onClick={() => setScreen('dashboard')}
+            title="Back to Dashboard"
+            aria-label="Back to Dashboard"
+            className="p-2 -ml-1 text-slate-600 hover:text-slate-900 hover:bg-slate-200/70 rounded-xl transition-colors cursor-pointer shrink-0 mt-0.5"
+          >
+            <ArrowLeft className="w-5 h-5" />
+          </button>
+          <div>
+            <div className="flex items-center gap-2 mb-1.5 flex-wrap">
+              <span className="text-xs font-mono font-bold bg-slate-100 text-slate-700 px-2.5 py-0.5 rounded-lg border border-slate-200/80">
+                Merchant ID: FD-BLR-{bankLast4}
+              </span>
+              <span className="text-xs text-emerald-700 bg-emerald-50 border border-emerald-200/80 px-2.5 py-0.5 rounded-full font-semibold flex items-center gap-1">
+                <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+                Direct Bank Settlement Active
+              </span>
+            </div>
+            <h1 className="text-2xl sm:text-3xl font-bold font-heading text-slate-900 tracking-tight">
+              Earnings & Settlements
+            </h1>
+            <p className="text-xs text-slate-500 mt-0.5 font-sans">
+              Real-time ledger of order earnings, available balance, clearing schedules, and settled bank transfers.
+            </p>
           </div>
-          <h1 className="text-2xl sm:text-3xl font-bold font-heading text-slate-900 tracking-tight">
-            Earnings & Settlements
-          </h1>
-          <p className="text-xs text-slate-500 mt-0.5 font-sans">
-            Real-time ledger of order earnings, available balance, clearing schedules, and settled bank transfers.
-          </p>
         </div>
 
         <div className="flex items-center gap-2.5 self-start sm:self-auto">

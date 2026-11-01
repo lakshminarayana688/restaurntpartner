@@ -230,12 +230,12 @@ export const FeedoDispatchAgentModal: React.FC<FeedoDispatchAgentModalProps> = (
     if (q.includes('stock') || q.includes('ingredient') || q.includes('unavailable') || q.includes('finished') || q.includes('sold out') || q.includes('menu')) {
       return {
         text: `If any dish or ingredient has run out:\n\n` +
-          `1. Navigate to the **Menu Editor** screen.\n` +
+          `1. Navigate to the **Restaurant Menu** screen.\n` +
           `2. Find the item and toggle the switch to **"🔴 Out of Stock"**.\n` +
           `3. Customer apps update instantly across the city to prevent any unfillable orders.\n\n` +
           `You can turn it back to **"🟢 In Stock"** anytime once your kitchen is restocked.`,
         actionButtons: [
-          { label: 'Open Menu Editor', action: 'NAVIGATE_MENU' },
+          { label: 'Open Restaurant Menu', action: 'NAVIGATE_MENU' },
         ],
       };
     }

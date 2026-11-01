@@ -12,10 +12,11 @@ import {
   Smile,
   ShieldCheck,
   Tag,
+  ArrowLeft,
 } from 'lucide-react';
 
 export const ReviewsScreen: React.FC = () => {
-  const { reviews, addReviewReply, showToast } = useApp();
+  const { reviews, addReviewReply, showToast, setScreen } = useApp();
   const [replyingTo, setReplyingTo] = useState<string | null>(null);
   const [replyText, setReplyText] = useState('');
 
@@ -49,13 +50,24 @@ export const ReviewsScreen: React.FC = () => {
     <div className="p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto space-y-8 animate-in fade-in">
       {/* Top Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-100 pb-6">
-        <div>
-          <h1 className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight">
-            Customer Reviews & Ratings
-          </h1>
-          <p className="text-xs text-slate-500 mt-0.5">
-            Monitor customer satisfaction, sentiment insights, and respond to diner feedback.
-          </p>
+        <div className="flex items-start gap-3">
+          <button
+            type="button"
+            onClick={() => setScreen('dashboard')}
+            title="Back to Dashboard"
+            aria-label="Back to Dashboard"
+            className="p-2 -ml-1 text-slate-600 hover:text-slate-900 hover:bg-slate-200/70 rounded-xl transition-colors cursor-pointer shrink-0 mt-0.5"
+          >
+            <ArrowLeft className="w-5 h-5" />
+          </button>
+          <div>
+            <h1 className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight">
+              Customer Reviews & Ratings
+            </h1>
+            <p className="text-xs text-slate-500 mt-0.5">
+              Monitor customer satisfaction, sentiment insights, and respond to diner feedback.
+            </p>
+          </div>
         </div>
 
         <span className="self-start sm:self-auto text-xs font-bold bg-amber-50 text-amber-800 border border-amber-200 px-3 py-1.5 rounded-full flex items-center gap-1.5 shadow-2xs">

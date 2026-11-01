@@ -17,10 +17,11 @@ import {
   CheckCircle2,
   Sparkles,
   Award,
+  ArrowLeft,
 } from 'lucide-react';
 
 export const ProfileScreen: React.FC = () => {
-  const { restaurant, updateRestaurant, showToast } = useApp();
+  const { restaurant, updateRestaurant, showToast, setScreen } = useApp();
 
   const [form, setForm] = useState({
     name: restaurant.restaurantName,
@@ -79,13 +80,24 @@ export const ProfileScreen: React.FC = () => {
     <div className="p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto space-y-8 animate-in fade-in">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-100 pb-6">
-        <div>
-          <h1 className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight">
-            Restaurant Profile
-          </h1>
-          <p className="text-xs text-slate-500 mt-0.5">
-            Manage your public storefront, dining photos, business certifications, and geolocation.
-          </p>
+        <div className="flex items-start gap-3">
+          <button
+            type="button"
+            onClick={() => setScreen('dashboard')}
+            title="Back to Dashboard"
+            aria-label="Back to Dashboard"
+            className="p-2 -ml-1 text-slate-600 hover:text-slate-900 hover:bg-slate-200/70 rounded-xl transition-colors cursor-pointer shrink-0 mt-0.5"
+          >
+            <ArrowLeft className="w-5 h-5" />
+          </button>
+          <div>
+            <h1 className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight">
+              Restaurant Profile
+            </h1>
+            <p className="text-xs text-slate-500 mt-0.5">
+              Manage your public storefront, dining photos, business certifications, and geolocation.
+            </p>
+          </div>
         </div>
 
         <div className="flex items-center gap-3">

@@ -11,6 +11,7 @@ import {
   Mail,
   X,
   Lock,
+  ArrowLeft,
 } from 'lucide-react';
 
 interface StaffMember {
@@ -26,7 +27,7 @@ interface StaffMember {
 }
 
 export const StaffScreen: React.FC = () => {
-  const { showToast, currentUserRole } = useApp();
+  const { showToast, currentUserRole, setScreen } = useApp();
 
   const [staffList, setStaffList] = useState<StaffMember[]>([
     {
@@ -145,13 +146,24 @@ export const StaffScreen: React.FC = () => {
     <div className="p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto space-y-8 animate-in fade-in">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-100 pb-6">
-        <div>
-          <h1 className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight">
-            Staff & Permissions
-          </h1>
-          <p className="text-xs text-slate-500 mt-0.5">
-            Manage team members, multi-tenant roles, POS kitchen station access, and account security.
-          </p>
+        <div className="flex items-start gap-3">
+          <button
+            type="button"
+            onClick={() => setScreen('dashboard')}
+            title="Back to Dashboard"
+            aria-label="Back to Dashboard"
+            className="p-2 -ml-1 text-slate-600 hover:text-slate-900 hover:bg-slate-200/70 rounded-xl transition-colors cursor-pointer shrink-0 mt-0.5"
+          >
+            <ArrowLeft className="w-5 h-5" />
+          </button>
+          <div>
+            <h1 className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight">
+              Staff & Permissions
+            </h1>
+            <p className="text-xs text-slate-500 mt-0.5">
+              Manage team members, multi-tenant roles, POS kitchen station access, and account security.
+            </p>
+          </div>
         </div>
 
         <button

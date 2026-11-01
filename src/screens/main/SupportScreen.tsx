@@ -12,11 +12,12 @@ import {
   AlertCircle,
   PhoneCall,
   ChevronRight,
+  ArrowLeft,
 } from 'lucide-react';
 import { FeedoDispatchAgentModal } from '../../components/chat/FeedoDispatchAgentModal';
 
 export const SupportScreen: React.FC = () => {
-  const { showToast } = useApp();
+  const { showToast, setScreen } = useApp();
   const [searchFaq, setSearchFaq] = useState('');
   const [activeFaqCat, setActiveFaqCat] = useState('ALL');
   const [isChatModalOpen, setIsChatModalOpen] = useState(false);
@@ -45,18 +46,29 @@ export const SupportScreen: React.FC = () => {
     <div className="p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto space-y-8 animate-in fade-in">
       {/* Header with Live Chat CTA */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-100 pb-6">
-        <div>
-          <div className="flex items-center gap-2 mb-1">
-            <span className="text-xs font-bold text-emerald-600 bg-emerald-50 px-2.5 py-0.5 rounded-full border border-emerald-200 flex items-center gap-1">
-              <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" /> Live Support 24/7
-            </span>
+        <div className="flex items-start gap-3">
+          <button
+            type="button"
+            onClick={() => setScreen('dashboard')}
+            title="Back to Dashboard"
+            aria-label="Back to Dashboard"
+            className="p-2 -ml-1 text-slate-600 hover:text-slate-900 hover:bg-slate-200/70 rounded-xl transition-colors cursor-pointer shrink-0 mt-0.5"
+          >
+            <ArrowLeft className="w-5 h-5" />
+          </button>
+          <div>
+            <div className="flex items-center gap-2 mb-1">
+              <span className="text-xs font-bold text-emerald-600 bg-emerald-50 px-2.5 py-0.5 rounded-full border border-emerald-200 flex items-center gap-1">
+                <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" /> Live Support 24/7
+              </span>
+            </div>
+            <h1 className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight">
+              FEEDO Support Hub
+            </h1>
+            <p className="text-xs text-slate-500 mt-0.5">
+              Instant operational assistance, priority ticketing, and merchant knowledge base.
+            </p>
           </div>
-          <h1 className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight">
-            FEEDO Support Hub
-          </h1>
-          <p className="text-xs text-slate-500 mt-0.5">
-            Instant operational assistance, priority ticketing, and merchant knowledge base.
-          </p>
         </div>
 
         <div className="flex items-center gap-3">

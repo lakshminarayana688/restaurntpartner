@@ -15,6 +15,7 @@ import {
   Utensils,
   Heart,
   SlidersHorizontal,
+  ArrowLeft,
 } from 'lucide-react';
 
 const CATEGORIES: MenuCategory[] = [
@@ -28,7 +29,7 @@ const CATEGORIES: MenuCategory[] = [
 ];
 
 export const MenuScreen: React.FC = () => {
-  const { menuItems, toggleItemAvailability, deleteMenuItem, duplicateMenuItem } = useApp();
+  const { setScreen, menuItems, toggleItemAvailability, deleteMenuItem, duplicateMenuItem } = useApp();
 
   const [selectedCategory, setSelectedCategory] = useState<string>('ALL');
   const [dietaryFilter, setDietaryFilter] = useState<'ALL' | 'VEG' | 'NON_VEG'>('ALL');
@@ -62,9 +63,20 @@ export const MenuScreen: React.FC = () => {
       <div className="sticky top-0 z-20 bg-white border-b border-slate-100 px-4 pt-5 pb-3 space-y-3">
         {/* Title row */}
         <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-xl font-black text-slate-900 tracking-tight leading-tight">Menu & Pricing</h1>
-            <p className="text-[11px] text-slate-400 mt-0.5">{menuItems.length} items · {CATEGORIES.length} categories</p>
+          <div className="flex items-center gap-2.5">
+            <button
+              type="button"
+              onClick={() => setScreen('dashboard')}
+              title="Back to Dashboard"
+              aria-label="Back to Dashboard"
+              className="p-1.5 -ml-1 text-slate-600 hover:text-slate-900 hover:bg-slate-100 rounded-xl transition-colors cursor-pointer shrink-0"
+            >
+              <ArrowLeft className="w-5 h-5" />
+            </button>
+            <div>
+              <h1 className="text-xl font-black text-slate-900 tracking-tight leading-tight">Restaurant Menu</h1>
+              <p className="text-[11px] text-slate-400 mt-0.5">{menuItems.length} items · {CATEGORIES.length} categories</p>
+            </div>
           </div>
           <button
             onClick={handleAddNew}

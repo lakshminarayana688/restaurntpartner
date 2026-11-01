@@ -13,6 +13,7 @@ import {
   Sparkles,
   ChevronRight,
   ArrowRight,
+  ArrowLeft,
 } from 'lucide-react';
 
 type NotifTab = 'ALL' | 'ORDERS' | 'MESSAGES' | 'MARKETING' | 'SYSTEM';
@@ -88,18 +89,29 @@ export const NotificationsScreen: React.FC = () => {
     <div className="p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto space-y-8 animate-in fade-in">
       {/* Top Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-100 pb-6">
-        <div>
-          <div className="flex items-center gap-2 mb-1">
-            <span className="text-xs font-bold bg-feedo-50 text-feedo-700 px-2.5 py-0.5 rounded-full border border-feedo-200">
-              {filteredNotifs.length > 0 ? `${filteredNotifs.length} Unread Notifications` : '0 unread notifications'}
-            </span>
+        <div className="flex items-start gap-3">
+          <button
+            type="button"
+            onClick={() => setScreen('dashboard')}
+            title="Back to Dashboard"
+            aria-label="Back to Dashboard"
+            className="p-2 -ml-1 text-slate-600 hover:text-slate-900 hover:bg-slate-200/70 rounded-xl transition-colors cursor-pointer shrink-0 mt-0.5"
+          >
+            <ArrowLeft className="w-5 h-5" />
+          </button>
+          <div>
+            <div className="flex items-center gap-2 mb-1">
+              <span className="text-xs font-bold bg-feedo-50 text-feedo-700 px-2.5 py-0.5 rounded-full border border-feedo-200">
+                {filteredNotifs.length > 0 ? `${filteredNotifs.length} Unread Notifications` : '0 unread notifications'}
+              </span>
+            </div>
+            <h1 className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight">
+              Notifications Center
+            </h1>
+            <p className="text-xs text-slate-500 mt-0.5">
+              Real-time kitchen alerts, customer queries, payouts, and system notices.
+            </p>
           </div>
-          <h1 className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight">
-            Notifications Center
-          </h1>
-          <p className="text-xs text-slate-500 mt-0.5">
-            Real-time kitchen alerts, customer queries, payouts, and system notices.
-          </p>
         </div>
 
         <div className="flex items-center gap-3">

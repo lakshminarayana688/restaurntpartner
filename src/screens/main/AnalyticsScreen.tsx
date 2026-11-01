@@ -3,6 +3,7 @@ import { useApp } from '../../context/AppContext';
 import {
   TrendingUp,
   Award,
+  ArrowLeft,
 } from 'lucide-react';
 import {
   AreaChart,
@@ -111,7 +112,7 @@ const CustomTooltip: React.FC<TooltipProps> = ({ active, payload, label }) => {
 // ── Component ──────────────────────────────────────────────────────────────────
 
 export const AnalyticsScreen: React.FC = () => {
-  const { menuItems, orders } = useApp();
+  const { menuItems, orders, setScreen } = useApp();
   const [filter, setFilter] = useState<'today' | '7days' | '30days'>('7days');
 
   const validOrders = orders.filter(
@@ -146,13 +147,24 @@ export const AnalyticsScreen: React.FC = () => {
     <div className="p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto space-y-6 animate-in fade-in">
       {/* ── Header ── */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div>
-          <h1 className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight">
-            Business Analytics
-          </h1>
-          <p className="text-xs text-slate-500 mt-0.5">
-            Operational metrics, sales volume, peak hours, and customer retention metrics.
-          </p>
+        <div className="flex items-start gap-3">
+          <button
+            type="button"
+            onClick={() => setScreen('dashboard')}
+            title="Back to Dashboard"
+            aria-label="Back to Dashboard"
+            className="p-2 -ml-1 text-slate-600 hover:text-slate-900 hover:bg-slate-200/70 rounded-xl transition-colors cursor-pointer shrink-0 mt-0.5"
+          >
+            <ArrowLeft className="w-5 h-5" />
+          </button>
+          <div>
+            <h1 className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight">
+              Business Analytics
+            </h1>
+            <p className="text-xs text-slate-500 mt-0.5">
+              Operational metrics, sales volume, peak hours, and customer retention metrics.
+            </p>
+          </div>
         </div>
 
         <div className="flex bg-white p-1 rounded-2xl border border-slate-200 shadow-2xs self-start sm:self-auto">

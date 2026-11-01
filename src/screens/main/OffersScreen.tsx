@@ -12,10 +12,11 @@ import {
   X,
   TrendingUp,
   Award,
+  ArrowLeft,
 } from 'lucide-react';
 
 export const OffersScreen: React.FC = () => {
-  const { offers, createOffer, toggleOfferActive, showToast } = useApp();
+  const { offers, createOffer, toggleOfferActive, showToast, setScreen } = useApp();
   const [isModalOpen, setIsModalOpen] = useState(false);
 
   const [form, setForm] = useState({
@@ -47,13 +48,24 @@ export const OffersScreen: React.FC = () => {
     <div className="p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto space-y-8 animate-in fade-in">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-100 pb-6">
-        <div>
-          <h1 className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight">
-            Promotions & Customer Offers
-          </h1>
-          <p className="text-xs text-slate-500 mt-0.5">
-            Create attractive discount coupons, Happy Hour boosts, and meal combos to increase diner cart sizes.
-          </p>
+        <div className="flex items-start gap-3">
+          <button
+            type="button"
+            onClick={() => setScreen('dashboard')}
+            title="Back to Dashboard"
+            aria-label="Back to Dashboard"
+            className="p-2 -ml-1 text-slate-600 hover:text-slate-900 hover:bg-slate-200/70 rounded-xl transition-colors cursor-pointer shrink-0 mt-0.5"
+          >
+            <ArrowLeft className="w-5 h-5" />
+          </button>
+          <div>
+            <h1 className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight">
+              Promotions & Customer Offers
+            </h1>
+            <p className="text-xs text-slate-500 mt-0.5">
+              Create attractive discount coupons, Happy Hour boosts, and meal combos to increase diner cart sizes.
+            </p>
+          </div>
         </div>
 
         <button

@@ -19,6 +19,7 @@ import {
   BarChart3,
   CalendarDays,
   TrendingUp,
+  ArrowLeft,
 } from 'lucide-react';
 import { FeedoDispatchAgentModal } from '../../components/chat/FeedoDispatchAgentModal';
 
@@ -27,6 +28,7 @@ type DateRange = 'today' | '7days' | '30days' | 'all';
 
 export const OrdersScreen: React.FC = () => {
   const {
+    setScreen,
     orders,
     setSelectedOrder,
     testOrderSound,
@@ -121,11 +123,22 @@ export const OrdersScreen: React.FC = () => {
 
       {/* ── Header ─────────────────────────────────────────── */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div>
-          <h1 className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight">Orders Hub</h1>
-          <p className="text-xs text-slate-500 mt-0.5">
-            Manage live orders, monitor prep times, and complete delivery handovers.
-          </p>
+        <div className="flex items-start gap-3">
+          <button
+            type="button"
+            onClick={() => setScreen('dashboard')}
+            title="Back to Dashboard"
+            aria-label="Back to Dashboard"
+            className="p-2 -ml-1 text-slate-600 hover:text-slate-900 hover:bg-slate-200/70 rounded-xl transition-colors cursor-pointer shrink-0 mt-0.5"
+          >
+            <ArrowLeft className="w-5 h-5" />
+          </button>
+          <div>
+            <h1 className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight">Orders Hub</h1>
+            <p className="text-xs text-slate-500 mt-0.5">
+              Manage live orders, monitor prep times, and complete delivery handovers.
+            </p>
+          </div>
         </div>
         <div className="flex items-center gap-2 self-start sm:self-auto flex-wrap">
           <button

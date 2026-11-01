@@ -55,7 +55,7 @@ export const Sidebar: React.FC = () => {
   const navItems: NavItem[] = [
     { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard, allowedRoles: ['OWNER', 'MANAGER', 'STAFF', 'KITCHEN', 'CASHIER'] },
     { id: 'orders', label: 'Orders', icon: ShoppingBag, badge: activeOrdersCount > 0 ? activeOrdersCount : undefined, allowedRoles: ['OWNER', 'MANAGER', 'STAFF', 'KITCHEN', 'CASHIER'] },
-    { id: 'menu', label: 'Menu Editor', icon: Utensils, allowedRoles: ['OWNER', 'MANAGER', 'STAFF', 'KITCHEN'] },
+    { id: 'menu', label: 'Restaurant Menu', icon: Utensils, allowedRoles: ['OWNER', 'MANAGER', 'STAFF', 'KITCHEN'] },
     { id: 'analytics', label: 'Analytics', icon: BarChart3, allowedRoles: ['OWNER', 'MANAGER'] },
     { id: 'earnings', label: 'Earnings', icon: Wallet, allowedRoles: ['OWNER', 'MANAGER'] },
     { id: 'offers', label: 'Promotions', icon: TicketPercent, allowedRoles: ['OWNER', 'MANAGER'] },
